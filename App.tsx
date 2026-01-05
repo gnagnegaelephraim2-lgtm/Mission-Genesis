@@ -20,7 +20,9 @@ import {
   Zap, 
   ChevronLeft,
   Sun,
-  Moon
+  Moon,
+  Lock,
+  UserPlus
 } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -48,7 +50,6 @@ const App: React.FC = () => {
     }
   }, [theme]);
 
-  // Calculate current user XP dynamically based on actual mission values
   const userXp = useMemo(() => {
     const base = 2450;
     const earned = completedMissions.reduce((total, id) => {
@@ -60,7 +61,6 @@ const App: React.FC = () => {
 
   const userLevel = Math.floor(userXp / 1000) + 1;
 
-  // Load state from localStorage on mount
   useEffect(() => {
     const savedMissions = localStorage.getItem('mission_genesis_completed');
     if (savedMissions) {
@@ -74,7 +74,6 @@ const App: React.FC = () => {
     if (savedTheme) setTheme(savedTheme as 'dark' | 'light');
   }, []);
 
-  // Persist state
   useEffect(() => {
     localStorage.setItem('mission_genesis_completed', JSON.stringify(completedMissions));
   }, [completedMissions]);
@@ -92,6 +91,10 @@ const App: React.FC = () => {
   };
 
   const pushScreen = (screen: string, props: any = {}) => {
+    if (!isLoggedIn) {
+      setShowAuth(true);
+      return;
+    }
     setNavigationStack([...navigationStack, { screen, props }]);
   };
 
@@ -167,7 +170,7 @@ const App: React.FC = () => {
       case 'opportunities':
         return <OpportunitiesScreen />;
       case 'leaderboard':
-        return <LeaderboardScreen userXp={userXp} />;
+        return <LeaderboardScreen userXp={userXp} userProfile={userProfile} />;
       case 'profile':
         return <ProfileScreen 
           userXp={userXp} 
@@ -183,54 +186,88 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className={`flex justify-center min-h-screen ${theme === 'dark' ? 'bg-slate-950/50' : 'bg-slate-100'}`}>
+    <div className={`flex justify-center h-screen w-screen overflow-hidden ${theme === 'dark' ? 'bg-slate-950' : 'bg-slate-100'} transition-colors duration-500`}>
       <div className={`fixed inset-0 pointer-events-none opacity-10 bg-[url('https://www.transparenttextures.com/patterns/circuit-board.png')] ${theme === 'light' ? 'invert' : ''}`}></div>
       
-      <div className={`w-full max-w-[448px] h-screen flex flex-col relative shadow-[0_0_100px_rgba(0,0,0,0.8)] overflow-hidden border-x ${theme === 'dark' ? 'bg-slate-950 border-slate-800/50' : 'bg-white border-slate-200'}`}>
+      {/* Container is fixed to viewport height (h-screen) to allow internal main area to scroll correctly */}
+      <div className={`w-full max-w-screen-xl h-screen flex flex-col relative md:shadow-[0_0_100px_rgba(0,0,0,0.4)] overflow-hidden border-x ${theme === 'dark' ? 'bg-slate-950 border-slate-800/50' : 'bg-white border-slate-200'}`}>
         
-        {isLoggedIn && (
-          <header className={`px-4 pt-10 pb-4 flex items-center justify-between z-50 ${theme === 'dark' ? 'bg-gradient-to-b from-slate-900 via-slate-950 to-transparent' : 'bg-gradient-to-b from-white via-slate-50 to-transparent'}`}>
-            <div className="flex items-center gap-2">
-              {navigationStack.length > 0 && (
-                <button 
-                  onClick={popScreen}
-                  className={`p-1.5 border rounded-lg transition-all shadow-lg ${theme === 'dark' ? 'bg-slate-800/50 border-slate-700 text-amber-500 hover:bg-slate-700' : 'bg-white border-slate-200 text-amber-600 hover:bg-slate-100'}`}
-                >
-                  <ChevronLeft size={20} strokeWidth={3} />
-                </button>
-              )}
-              <div className={`px-3 py-1.5 rounded-full flex items-center gap-2 shadow-lg group overflow-hidden border ${theme === 'dark' ? 'bg-slate-900 border-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.15)]' : 'bg-white border-amber-200'}`}>
-                <Zap size={14} className="text-amber-500 fill-amber-500 animate-pulse" />
-                <span className={`font-tactical text-[11px] font-black tracking-tighter ${theme === 'dark' ? 'text-amber-500' : 'text-amber-600'}`}>
-                  {userXp.toLocaleString()} XP • LVL {userLevel}
-                </span>
-                <div className="absolute inset-0 shimmer opacity-20 group-hover:opacity-40 pointer-events-none"></div>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <button 
-                onClick={toggleTheme}
-                className={`p-2 border rounded-xl transition-all ${theme === 'dark' ? 'bg-slate-800/50 border-slate-700 text-slate-400 hover:text-amber-500' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-100'}`}
-              >
-                {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-              </button>
-              <div className="relative group">
-                <div className={`p-2 border rounded-xl transition-all cursor-pointer ${theme === 'dark' ? 'bg-slate-800/50 border-slate-700 hover:bg-slate-700' : 'bg-white border-slate-200 hover:bg-slate-100'}`}>
-                  <Bell size={20} className={theme === 'dark' ? 'text-slate-400 group-hover:text-amber-500' : 'text-slate-500'} />
+        <header className={`px-4 md:px-10 pt-10 pb-4 flex items-center justify-between z-50 sticky top-0 transition-all shrink-0 ${theme === 'dark' ? 'bg-slate-950/80 backdrop-blur-md' : 'bg-white/80 backdrop-blur-md'}`}>
+          {isLoggedIn ? (
+            <div className="flex w-full items-center justify-between">
+              <div className="flex items-center gap-4 min-w-0">
+                {navigationStack.length > 0 && (
+                  <button 
+                    onClick={popScreen}
+                    className={`p-2 border rounded-xl transition-all shadow-lg shrink-0 ${theme === 'dark' ? 'bg-slate-800/50 border-slate-700 text-amber-500 hover:bg-slate-700' : 'bg-white border-slate-200 text-amber-600 hover:bg-slate-100'}`}
+                  >
+                    <ChevronLeft size={24} strokeWidth={3} />
+                  </button>
+                )}
+                <div className={`px-4 py-2 rounded-2xl flex items-center gap-3 shadow-lg group overflow-hidden border truncate shrink min-w-0 ${theme === 'dark' ? 'bg-slate-900 border-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.15)]' : 'bg-white border-amber-200'}`}>
+                  <Zap size={16} className="text-amber-500 fill-amber-500 animate-pulse shrink-0" />
+                  <span className={`font-tactical text-xs md:text-sm font-black tracking-tighter truncate ${theme === 'dark' ? 'text-amber-500' : 'text-amber-600'}`}>
+                    {userXp.toLocaleString()} XP • LVL {userLevel}
+                  </span>
+                  <div className="absolute inset-0 shimmer opacity-20 group-hover:opacity-40 pointer-events-none"></div>
                 </div>
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-600 rounded-full border-2 border-slate-950 animate-bounce"></span>
+              </div>
+              
+              <div className="flex items-center gap-3 shrink-0 ml-2">
+                <button 
+                  onClick={toggleTheme}
+                  className={`p-2.5 border rounded-xl transition-all ${theme === 'dark' ? 'bg-slate-800/50 border-slate-700 text-slate-400 hover:text-amber-500' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-100'}`}
+                >
+                  {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+                </button>
+                <div className="relative group hidden sm:block">
+                  <div className={`p-2.5 border rounded-xl transition-all cursor-pointer ${theme === 'dark' ? 'bg-slate-800/50 border-slate-700 hover:bg-slate-700' : 'bg-white border-slate-200 hover:bg-slate-100'}`}>
+                    <Bell size={20} className={theme === 'dark' ? 'text-slate-400 group-hover:text-amber-500' : 'text-slate-500'} />
+                  </div>
+                  <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-600 rounded-full border-2 border-slate-950 animate-bounce"></span>
+                </div>
               </div>
             </div>
-          </header>
-        )}
+          ) : (
+            <div className="flex w-full items-center justify-between">
+               <div className="flex items-center gap-2">
+                 <div className="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center">
+                    <Lock size={16} className="text-slate-950" strokeWidth={3} />
+                 </div>
+                 <h1 className="font-tactical font-black text-amber-500 text-lg tracking-tighter uppercase hidden xs:block">GENESIS</h1>
+               </div>
+               
+               <div className="flex items-center gap-4">
+                 <button 
+                   onClick={toggleTheme}
+                   className={`p-2.5 border rounded-xl transition-all ${theme === 'dark' ? 'bg-slate-800/50 border-slate-700 text-slate-400 hover:text-amber-500' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-100'}`}
+                 >
+                   {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+                 </button>
 
-        <main className={`flex-1 overflow-y-auto custom-scrollbar ${isLoggedIn ? 'pb-28' : ''} relative`}>
-          {renderScreen()}
+                 {!showAuth && (
+                   <button 
+                     onClick={() => setShowAuth(true)}
+                     className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-tactical font-black text-[10px] sm:text-xs px-6 py-2.5 rounded-xl shadow-[0_10px_20px_rgba(245,158,11,0.3)] transition-all active:scale-95 flex items-center gap-2 group"
+                   >
+                     <UserPlus size={14} className="group-hover:scale-110 transition-transform" />
+                     LOGIN / SIGNUP
+                   </button>
+                 )}
+               </div>
+            </div>
+          )}
+        </header>
+
+        {/* The internal area now has overflow-y-auto to allow scrolling within the fixed-height container */}
+        <main className={`flex-1 overflow-y-auto custom-scrollbar relative`}>
+          <div className={`${isLoggedIn ? 'pb-32' : 'pb-10'}`}>
+            {renderScreen()}
+          </div>
         </main>
 
         {isLoggedIn && (
-          <nav className={`absolute bottom-6 left-6 right-6 backdrop-blur-2xl border rounded-2xl px-6 py-4 flex justify-between items-center z-50 shadow-2xl transition-all ${theme === 'dark' ? 'bg-slate-900/80 border-slate-700/50' : 'bg-white/80 border-slate-200/50'}`}>
+          <nav className={`fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-3rem)] max-w-md md:max-w-lg backdrop-blur-2xl border rounded-3xl px-6 py-4 flex justify-between items-center z-50 shadow-[0_20px_60px_rgba(0,0,0,0.4)] transition-all ${theme === 'dark' ? 'bg-slate-900/80 border-slate-700/50' : 'bg-white/80 border-slate-200/50'}`}>
             {[
               { id: 'home', icon: Home, label: 'Ops' },
               { id: 'opportunities', icon: Briefcase, label: 'Growth' },
@@ -245,21 +282,21 @@ const App: React.FC = () => {
                     setNavigationStack([]);
                     setActiveTab(tab.id as TabType);
                   }}
-                  className={`flex flex-col items-center gap-1 transition-all duration-300 relative group`}
+                  className={`flex flex-col items-center gap-1 transition-all duration-300 relative group flex-1`}
                 >
-                  <div className={`p-2.5 rounded-xl transition-all duration-500 ${
+                  <div className={`p-3 rounded-2xl transition-all duration-500 ${
                     isActive 
-                      ? 'bg-amber-500 text-slate-950 shadow-[0_0_25px_rgba(245,158,11,0.5)] -translate-y-2' 
+                      ? 'bg-amber-500 text-slate-950 shadow-[0_0_30px_rgba(245,158,11,0.6)] -translate-y-3' 
                       : `${theme === 'dark' ? 'text-slate-500 hover:text-slate-300 hover:bg-slate-800' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`
                   }`}>
-                    <tab.icon size={22} strokeWidth={isActive ? 3 : 2} />
+                    <tab.icon size={24} strokeWidth={isActive ? 3 : 2} />
                   </div>
-                  <span className={`text-[9px] uppercase font-tactical font-black tracking-[0.2em] transition-opacity duration-300 ${
+                  <span className={`text-[10px] uppercase font-tactical font-black tracking-[0.2em] transition-opacity duration-300 whitespace-nowrap ${
                     isActive ? 'opacity-100 text-amber-500' : 'opacity-0'
                   }`}>
                     {tab.label}
                   </span>
-                  {isActive && <div className="absolute -bottom-1 w-1 h-1 bg-amber-500 rounded-full shadow-[0_0_5px_amber] text-amber-500"></div>}
+                  {isActive && <div className="absolute -bottom-1 w-1.5 h-1.5 bg-amber-500 rounded-full shadow-[0_0_8px_amber]"></div>}
                 </button>
               );
             })}

@@ -2,32 +2,22 @@
 import { World, Chapter, Mission, Opportunity, Player, SkillProgress } from './types';
 
 export const WORLDS: World[] = [
-  { id: 'physics', subject: 'PHYSICS', title: 'Power the Future', progress: 30, gradient: 'from-cyan-600 to-blue-900', icon: '⚡', color: '#06b6d4' },
-  { id: 'biology', subject: 'BIOLOGY', title: 'Life Sustained', progress: 15, gradient: 'from-emerald-600 to-teal-900', icon: '🌿', color: '#10b981' },
-  { id: 'mathematics', subject: 'MATH', title: 'Logic Gates', progress: 0, gradient: 'from-purple-600 to-indigo-900', icon: '∞', color: '#a855f7' },
-  { id: 'chemistry', subject: 'CHEMISTRY', title: 'Molecular Purge', progress: 0, gradient: 'from-amber-500 to-orange-800', icon: '🧪', color: '#f59e0b' },
-  { id: 'agriculture', subject: 'AGRI', title: 'Green Revolution', progress: 0, gradient: 'from-lime-600 to-green-900', icon: '🌾', color: '#84cc16' },
-  { id: 'computer-science', subject: 'CS', title: 'Digital Frontiers', progress: 0, gradient: 'from-blue-500 to-indigo-900', icon: '💻', color: '#3b82f6' },
-  { id: 'engineering', subject: 'ENG', title: 'Structure City', progress: 0, gradient: 'from-slate-500 to-slate-900', icon: '🏗️', color: '#64748b' },
-  { id: 'robotics', subject: 'ROBOTICS', title: 'Mechanical Pulse', progress: 0, gradient: 'from-red-600 to-rose-900', icon: '🤖', color: '#e11d48' },
-  { id: 'aerospace', subject: 'AERO', title: 'Beyond Clouds', progress: 0, gradient: 'from-sky-500 to-indigo-800', icon: '🚀', color: '#0ea5e9' },
-  { id: 'medicine', subject: 'MEDICINE', title: 'Nano Healing', progress: 0, gradient: 'from-pink-500 to-rose-900', icon: '⚕️', color: '#f43f5e' },
-  { id: 'creative-tech', subject: 'CREATIVE', title: 'Holo Arts', progress: 0, gradient: 'from-violet-600 to-fuchsia-900', icon: '🎨', color: '#8b5cf6' },
-  { id: 'ecology', subject: 'ECOLOGY', title: 'Climate Guard', progress: 0, gradient: 'from-teal-500 to-emerald-900', icon: '🌍', color: '#14b8a6' },
-  { id: 'economics', subject: 'ECON', title: 'Market Logic', progress: 0, gradient: 'from-emerald-400 to-cyan-800', icon: '📈', color: '#34d399' },
-  { id: 'data-science', subject: 'DATA', title: 'Insight Engine', progress: 0, gradient: 'from-indigo-400 to-blue-900', icon: '📊', color: '#818cf8' },
-  { id: 'ai', subject: 'AI', title: 'Neural Network', progress: 0, gradient: 'from-fuchsia-500 to-purple-950', icon: '🧠', color: '#d946ef' },
-  { id: 'renewables', subject: 'ENERGY', title: 'Solar Harvest', progress: 0, gradient: 'from-yellow-400 to-orange-700', icon: '☀️', color: '#facc15' },
-  { id: 'water', subject: 'WATER', title: 'Fluid Dynamics', progress: 0, gradient: 'from-blue-400 to-indigo-800', icon: '💧', color: '#60a5fa' },
-  { id: 'urban', subject: 'URBAN', title: 'Metro Flow', progress: 0, gradient: 'from-zinc-500 to-slate-900', icon: '🏙️', color: '#a1a1aa' },
-  { id: 'fintech', subject: 'FINTECH', title: 'Block Ledger', progress: 0, gradient: 'from-cyan-400 to-blue-950', icon: '💎', color: '#22d3ee' },
-  { id: 'biotech', subject: 'BIOTECH', title: 'Gene Splice', progress: 0, gradient: 'from-emerald-500 to-teal-950', icon: '🧬', color: '#10b981' },
-  { id: 'logistics', subject: 'LOGISTICS', title: 'Chain Link', progress: 0, gradient: 'from-orange-500 to-amber-900', icon: '📦', color: '#f97316' },
-  { id: 'education', subject: 'EDTECH', title: 'Brain Uplink', progress: 0, gradient: 'from-blue-600 to-purple-800', icon: '📖', color: '#2563eb' },
-  { id: 'telecom', subject: 'TELECOM', title: 'Signal Sky', progress: 0, gradient: 'from-rose-500 to-purple-900', icon: '📡', color: '#f43f5e' },
-  { id: 'mining', subject: 'MINING', title: 'Deep Extract', progress: 0, gradient: 'from-amber-700 to-yellow-950', icon: '⛏️', color: '#b45309' },
-  { id: 'marine', subject: 'MARINE', title: 'Abyssal Tech', progress: 0, gradient: 'from-blue-800 to-indigo-950', icon: '⚓', color: '#1e40af' },
-  { id: 'sociology', subject: 'SOCIAL', title: 'Civic Mesh', progress: 0, gradient: 'from-pink-400 to-rose-900', icon: '🤝', color: '#f472b6' },
+  { id: 'physics', subject: 'PHYSICS', title: 'Kinetic Pulse', progress: 30, gradient: 'from-cyan-600 to-blue-900', icon: '⚡', color: '#06b6d4' },
+  { id: 'biology', subject: 'BIOLOGY', title: 'Bio-Sustain Grid', progress: 15, gradient: 'from-emerald-600 to-teal-900', icon: '🌿', color: '#10b981' },
+  { id: 'mathematics', subject: 'MATH', title: 'Prime Logic', progress: 0, gradient: 'from-purple-600 to-indigo-900', icon: '∞', color: '#a855f7' },
+  { id: 'chemistry', subject: 'CHEMISTRY', title: 'Molecular Forge', progress: 0, gradient: 'from-amber-400 to-orange-700', icon: '🧪', color: '#f59e0b' },
+  { id: 'agriculture', subject: 'AGRI', title: 'Verdant Sahel', progress: 0, gradient: 'from-lime-500 to-green-800', icon: '🌾', color: '#84cc16' },
+  { id: 'computer-science', subject: 'CS', title: 'Neural Mesh', progress: 0, gradient: 'from-blue-600 to-indigo-950', icon: '💻', color: '#3b82f6' },
+  { id: 'engineering', subject: 'ENG', title: "Titan's Forge", progress: 0, gradient: 'from-slate-600 to-slate-900', icon: '🏗️', color: '#64748b' },
+  { id: 'env-science', subject: 'ENVIRON', title: "Gaia's Shield", progress: 0, gradient: 'from-teal-400 to-emerald-900', icon: '🌍', color: '#14b8a6' },
+  { id: 'robotics', subject: 'ROBOTICS', title: 'Android Pulse', progress: 0, gradient: 'from-red-600 to-rose-950', icon: '🤖', color: '#e11d48' },
+  { id: 'aerospace', subject: 'AERO', title: 'Zero-G Frontier', progress: 0, gradient: 'from-sky-500 to-blue-950', icon: '🚀', color: '#0ea5e9' },
+  { id: 'medicine', subject: 'MEDICINE', title: 'Vital Link', progress: 0, gradient: 'from-pink-500 to-rose-900', icon: '⚕️', color: '#f43f5e' },
+  { id: 'geology', subject: 'GEOLOGY', title: 'Core Extract', progress: 0, gradient: 'from-yellow-800 to-orange-950', icon: '💎', color: '#92400e' },
+  { id: 'data-science', subject: 'DATA', title: 'Binary Sight', progress: 0, gradient: 'from-indigo-500 to-blue-900', icon: '📊', color: '#6366f1' },
+  { id: 'renewables', subject: 'ENERGY', title: 'Solar Harvest', progress: 0, gradient: 'from-yellow-400 to-amber-700', icon: '☀️', color: '#facc15' },
+  { id: 'biotech', subject: 'BIOTECH', title: 'Genomic Weaver', progress: 0, gradient: 'from-violet-600 to-fuchsia-900', icon: '🧬', color: '#d946ef' },
+  { id: 'telecom', subject: 'TELECOM', title: 'Signal Horizon', progress: 0, gradient: 'from-orange-500 to-red-900', icon: '📡', color: '#f97316' },
 ];
 
 export const CHAPTERS: Record<string, Chapter[]> = WORLDS.reduce((acc, world) => {
@@ -35,27 +25,40 @@ export const CHAPTERS: Record<string, Chapter[]> = WORLDS.reduce((acc, world) =>
   return acc;
 }, {} as Record<string, Chapter[]>);
 
-// Generate missions with varying counts per world
-export const MISSIONS: Mission[] = WORLDS.flatMap((world, wIdx) => {
-  // Varying mission counts: 1, 26, 54, and then cycling or using a default
-  let count = 10;
-  if (wIdx === 0) count = 1;
-  else if (wIdx === 1) count = 26;
-  else if (wIdx === 2) count = 54;
-  else count = 15;
+const PHYSICS_STORIES = [
+  "Calculate the trajectory of a community water pump lever to maximize efficiency using torque principles.",
+  "Optimize the solar array tilt for a village grid using thermal radiation and photon flux analysis.",
+  "Deploy seismic sensors across the Rift Valley and interpret wave propagation to predict structural stress.",
+  "Design a low-cost refrigeration unit using the Joule-Thomson effect for vaccine storage in remote zones.",
+  "Stabilize the Kinetic Energy Recovery System (KERS) on local transport vehicles to reduce fuel drain.",
+  "Analyze the electromagnetic interference patterns disrupting the regional education broadcasts."
+];
 
-  return Array.from({ length: count }).map((_, mIdx) => ({
-    id: (wIdx * 100) + mIdx + 1, // Unique ID across all worlds
-    worldId: world.id,
-    title: `${world.title} Module ${mIdx + 1}`,
-    story: `Objective: Deploy STEM solutions in the ${world.subject} sector. Tactical analysis indicates critical needs in Sector ${mIdx + 1}.`,
-    difficulty: mIdx % 3 === 0 ? 'Medium' : mIdx % 3 === 1 ? 'Hard' : 'Expert',
-    xp: 650 + (mIdx * 100),
-    locked: mIdx > 0, // In a real app, this logic would depend on completion
-    bgGradient: world.gradient,
-    completed: false,
-    environment: `High-fidelity 3D simulation of ${world.subject} challenges.`
-  }));
+export const MISSIONS: Mission[] = WORLDS.flatMap((world, wIdx) => {
+  let count = 12;
+  if (wIdx === 1) count = 26; // Biology
+  else if (wIdx === 2) count = 54; // Math
+  else if (wIdx % 2 === 0) count = 32; 
+
+  return Array.from({ length: count }).map((_, mIdx) => {
+    const isPhysics = world.id === 'physics';
+    return {
+      id: (wIdx * 1000) + mIdx + 1,
+      worldId: world.id,
+      title: isPhysics && mIdx < PHYSICS_STORIES.length 
+        ? [`Vector Synthesis`, `Thermal Grid Alpha`, `Seismic Mesh`, `Cryo-Logic`, `Kinetic Flow`, `Signal Integrity`][mIdx] 
+        : `${world.title} // Tactical Mod ${mIdx + 1}`,
+      story: isPhysics && mIdx < PHYSICS_STORIES.length 
+        ? PHYSICS_STORIES[mIdx] 
+        : `Deploying to Sector ${world.subject}-${mIdx + 1}. Mission objective: Secure local ${world.subject.toLowerCase()} data nodes and neutralize architectural threats.`,
+      difficulty: mIdx % 3 === 0 ? 'Medium' : mIdx % 3 === 1 ? 'Hard' : 'Expert',
+      xp: 650 + (mIdx * 50),
+      locked: mIdx > 0, 
+      bgGradient: world.gradient,
+      completed: false,
+      environment: `Simulated high-fidelity ${world.subject} combat environment.`
+    };
+  });
 });
 
 export const CHAPTER_MISSION_IDS: Record<string, number[]> = MISSIONS.reduce((acc, mission) => {

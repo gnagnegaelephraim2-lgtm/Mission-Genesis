@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Target, Shield, Zap, ChevronRight } from 'lucide-react';
+import { Target, Shield, Zap, ChevronRight, UserPlus } from 'lucide-react';
 
 interface LandingScreenProps {
   onGetStarted: () => void;
@@ -14,8 +14,8 @@ const LandingScreen: React.FC<LandingScreenProps> = ({ onGetStarted }) => {
       <div className="absolute top-1/4 -left-20 w-80 h-80 bg-amber-500/20 rounded-full blur-[100px] animate-pulse"></div>
       <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-blue-600/10 rounded-full blur-[100px] animate-pulse delay-700"></div>
 
-      <div className="relative z-10 text-center max-w-sm">
-        <div className="mb-12 relative group inline-block">
+      <div className="relative z-10 text-center max-w-sm w-full">
+        <div className="mb-10 relative group inline-block">
           <div className="w-24 h-24 bg-slate-900 border-2 border-amber-500 rounded-[2rem] flex items-center justify-center shadow-[0_0_40px_rgba(245,158,11,0.3)] rotate-12 group-hover:rotate-0 transition-transform duration-500">
             <Target size={48} className="text-amber-500" />
           </div>
@@ -27,11 +27,11 @@ const LandingScreen: React.FC<LandingScreenProps> = ({ onGetStarted }) => {
           <span className="text-6xl text-amber-500 drop-shadow-[0_0_20px_rgba(245,158,11,0.5)]">GENESIS</span>
         </h1>
 
-        <p className="text-slate-400 text-sm font-medium leading-relaxed mb-12 px-4 uppercase tracking-widest font-tactical opacity-80">
+        <p className="text-slate-400 text-[11px] font-medium leading-relaxed mb-10 px-4 uppercase tracking-[0.3em] font-tactical opacity-80">
           The next generation of <span className="text-amber-500">STEM excellence</span> is here. Solve real-world challenges. Secure the future.
         </p>
 
-        <div className="space-y-4">
+        <div className="space-y-4 w-full">
           <button 
             onClick={onGetStarted}
             className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-tactical font-black text-xl py-5 rounded-2xl shadow-[0_15px_30px_rgba(245,158,11,0.3)] active:scale-95 transition-all group overflow-hidden relative"
@@ -41,6 +41,14 @@ const LandingScreen: React.FC<LandingScreenProps> = ({ onGetStarted }) => {
               Initiate Uplink
               <ChevronRight size={20} />
             </span>
+          </button>
+
+          <button 
+            onClick={onGetStarted}
+            className="w-full bg-slate-900/50 border border-slate-800 hover:border-amber-500/50 text-white font-tactical font-black text-sm py-4 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 group"
+          >
+            <UserPlus size={18} className="text-amber-500 group-hover:scale-110 transition-transform" />
+            LOGIN / SIGNUP
           </button>
           
           <div className="flex items-center justify-center gap-4 py-4">

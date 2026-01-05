@@ -5,47 +5,49 @@ import { Sparkles, ArrowUpRight } from 'lucide-react';
 
 const OpportunitiesScreen: React.FC = () => {
   return (
-    <div className="p-6">
-      <div className="mb-8">
-        <h2 className="text-3xl font-tactical font-black text-white tracking-tighter leading-none mb-2 italic">GROWTH FEED</h2>
-        <p className="text-slate-400 text-sm font-medium">Curated opportunities based on your mission performance.</p>
+    <div className="p-6 md:p-10">
+      <div className="mb-10">
+        <h2 className="text-4xl font-tactical font-black text-white tracking-tighter leading-none mb-3 italic uppercase">Growth Feed</h2>
+        <p className="text-slate-400 text-base font-medium">Curated STEM pipelines and elite tactical programs.</p>
       </div>
 
-      <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-20">
         {OPPORTUNITIES.map((opp) => (
           <div 
             key={opp.id} 
-            className="bg-slate-900 border border-slate-800 rounded-3xl p-5 relative overflow-hidden group hover:border-amber-500/30 transition-all duration-300"
+            className="bg-slate-900/50 border border-slate-800 rounded-[2.5rem] p-7 relative overflow-hidden group hover:border-amber-500/30 transition-all duration-300 flex flex-col justify-between shadow-2xl"
           >
             {opp.recommended && (
-              <div className="absolute top-0 right-0 bg-amber-500 px-4 py-1 rounded-bl-2xl shadow-lg z-10">
-                <div className="flex items-center gap-1.5">
-                  <Sparkles size={12} className="text-slate-950 fill-slate-950" />
-                  <span className="text-[10px] font-tactical font-black text-slate-950 tracking-widest">FOR YOU</span>
+              <div className="absolute top-0 right-0 bg-amber-500 px-6 py-2 rounded-bl-3xl shadow-xl z-10">
+                <div className="flex items-center gap-2">
+                  <Sparkles size={14} className="text-slate-950 fill-slate-950" />
+                  <span className="text-[11px] font-tactical font-black text-slate-950 tracking-widest">FOR YOU</span>
                 </div>
               </div>
             )}
 
-            <div className="flex gap-4 items-start mb-4">
-              <div className="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center text-3xl shadow-inner border border-slate-700/50 group-hover:scale-105 transition-transform duration-500">
-                {opp.logo}
-              </div>
-              <div className="flex-1 pr-12">
-                <h3 className="text-lg font-tactical font-black text-white leading-tight mb-1 uppercase tracking-tighter">
-                  {opp.name}
-                </h3>
-                <p className="text-xs text-slate-400 font-semibold leading-relaxed">
-                  {opp.description}
-                </p>
+            <div>
+              <div className="flex gap-6 items-start mb-6">
+                <div className="w-20 h-20 bg-slate-800 rounded-2xl flex items-center justify-center text-4xl shadow-inner border border-slate-700/50 group-hover:scale-105 transition-transform duration-500 flex-shrink-0">
+                  {opp.logo}
+                </div>
+                <div className="flex-1 pr-12">
+                  <h3 className="text-xl font-tactical font-black text-white leading-tight mb-2 uppercase tracking-tighter">
+                    {opp.name}
+                  </h3>
+                  <p className="text-sm text-slate-400 font-semibold leading-relaxed">
+                    {opp.description}
+                  </p>
+                </div>
               </div>
             </div>
 
             <button 
               onClick={() => window.open(opp.url, '_blank')}
-              className="w-full bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-slate-300 font-tactical font-black text-xs py-3 rounded-xl transition-all flex items-center justify-center gap-2 group/btn"
+              className="w-full bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-slate-300 font-tactical font-black text-sm py-4 rounded-2xl transition-all flex items-center justify-center gap-3 group/btn mt-4 shadow-lg"
             >
               LEARN MORE
-              <ArrowUpRight size={14} className="group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
+              <ArrowUpRight size={18} className="group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
             </button>
             
             {/* Tactical Grid Background Overlay */}
