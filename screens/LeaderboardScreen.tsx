@@ -1,8 +1,7 @@
 
 import React, { useMemo } from 'react';
 import { Player } from '../types';
-// Added Radio to the imports from lucide-react
-import { Trophy, Zap, Medal, RefreshCw, Loader2, Radio } from 'lucide-react';
+import { Trophy, Zap, Medal, RefreshCw, Loader2, Radio, Info, Activity, Share2, UserPlus } from 'lucide-react';
 
 interface LeaderboardScreenProps {
   userXp: number;
@@ -10,6 +9,7 @@ interface LeaderboardScreenProps {
   meshCommanders?: Player[];
   isSyncing?: boolean;
   onRefresh?: () => void;
+  onShareInvite?: () => void;
 }
 
 const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ 
@@ -17,124 +17,155 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({
   userProfile, 
   meshCommanders = [], 
   isSyncing = false,
-  onRefresh
+  onRefresh,
+  onShareInvite
 }) => {
   const dynamicPlayers = useMemo(() => {
-    // Merge global commanders with the current user's latest stats
-    const pool = [...meshCommanders];
-    const userInMesh = pool.findIndex(c => c.id === userProfile.id);
-    
-    if (userInMesh === -1) {
-      pool.push({
-        rank: 0,
-        username: userProfile.username,
-        xp: userXp,
-        avatar: userProfile.avatar,
-        isUser: true,
-        id: userProfile.id
-      });
-    } else {
-      pool[userInMesh] = {
-        ...pool[userInMesh],
-        username: userProfile.username,
-        xp: Math.max(pool[userInMesh].xp, userXp),
-        avatar: userProfile.avatar,
-        isUser: true
-      };
-    }
+    // ELITE CORE COMMANDERS (Shadow NPC fallbacks)
+    const shadows: Player[] = [
+      { rank: 0, username: 'Elite_Aria', xp: 12450, avatar: '🐆', id: 'shadow-1' },
+      { rank: 0, username: 'Node_X', xp: 9800, avatar: '🐘', id: 'shadow-2' },
+      { rank: 0, username: 'Cipher_01', xp: 7250, avatar: '🦁', id: 'shadow-3' }
+    ];
 
-    return pool
+    let pool = [...meshCommanders];
+    const uniquePoolMap = new Map<string, Player>();
+    
+    // Add mesh commanders first
+    pool.forEach(p => {
+      if (p.id) uniquePoolMap.set(p.id, p);
+    });
+
+    // Force current user entry with latest local data
+    uniquePoolMap.set(userProfile.id || 'current-user', {
+      rank: 0,
+      username: userProfile.username,
+      xp: userXp,
+      avatar: userProfile.avatar,
+      isUser: true,
+      id: userProfile.id || 'current-user',
+      lastActive: Date.now()
+    });
+
+    // Fill with shadows if mesh is empty or to add competition
+    shadows.forEach(s => {
+      if (!uniquePoolMap.has(s.id!)) uniquePoolMap.set(s.id!, s);
+    });
+
+    const finalPool = Array.from(uniquePoolMap.values());
+
+    return finalPool
       .sort((a, b) => b.xp - a.xp)
       .map((p, i) => ({ ...p, rank: i + 1 }));
   }, [userXp, userProfile, meshCommanders]);
 
+  const currentUser = dynamicPlayers.find(p => p.isUser);
+  const userRank = currentUser?.rank || '-';
+
   return (
     <div className="p-4 sm:p-6 md:p-10 relative">
-      <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="mb-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div className="text-left">
-          <div className="flex items-center justify-between gap-4">
-             <h2 className="text-4xl font-tactical font-black text-white tracking-tighter italic uppercase truncate">Neural Ranks</h2>
-             <div className="flex items-center gap-2 text-amber-500 bg-amber-500/10 px-4 py-1.5 rounded-full border border-amber-500/30 shadow-[0_0_15px_rgba(245,158,11,0.1)] shrink-0">
-                <Trophy size={16} />
-                <span className="text-[11px] font-tactical font-black tracking-widest whitespace-nowrap">GLOBAL NODE</span>
+          <div className="flex items-center gap-3">
+             <h2 className="text-4xl font-tactical font-black text-white tracking-tighter italic uppercase">Neural Ranks</h2>
+             <div className={`px-3 py-1 rounded-lg border font-tactical font-black text-[10px] tracking-widest flex items-center gap-2 transition-colors duration-500 ${
+               isSyncing ? 'bg-amber-500/10 border-amber-500/30 text-amber-500' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500'
+             }`}>
+                <Radio size={12} className={isSyncing ? 'animate-pulse' : ''} />
+                {isSyncing ? 'UPLINKING...' : 'MESH LIVE'}
              </div>
           </div>
-          <p className="text-slate-500 text-xs font-tactical font-bold uppercase tracking-[0.2em] mt-2 italic">Syncing with all Commanders on the Mesh.</p>
+          <p className="text-slate-500 text-xs font-tactical font-bold uppercase tracking-[0.2em] mt-2 italic">
+            Global Standing: <span className="text-white font-black italic">Sector Rank #{userRank}</span>
+          </p>
         </div>
         
-        <button 
-          onClick={onRefresh}
-          disabled={isSyncing}
-          className="bg-slate-900 border border-slate-800 hover:border-amber-500/50 text-slate-400 hover:text-white p-3 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 group shadow-xl"
-        >
-          {isSyncing ? <Loader2 size={18} className="animate-spin text-amber-500" /> : <RefreshCw size={18} className="group-hover:rotate-180 transition-transform duration-500" />}
-          <span className="text-[10px] font-tactical font-black uppercase tracking-widest">Manual Sync</span>
-        </button>
+        <div className="flex gap-3">
+          <button 
+            onClick={onShareInvite}
+            className="flex-1 sm:flex-none bg-amber-500 text-slate-950 px-6 py-3 rounded-2xl flex items-center justify-center gap-3 transition-all active:scale-95 shadow-[0_0_30px_rgba(245,158,11,0.25)] hover:shadow-[0_0_40px_rgba(245,158,11,0.4)] group"
+          >
+            <UserPlus size={18} className="group-hover:scale-110 transition-transform" />
+            <span className="text-[10px] font-tactical font-black uppercase tracking-widest">Recruit Squad</span>
+          </button>
+          
+          <button 
+            onClick={onRefresh}
+            disabled={isSyncing}
+            className="bg-slate-900 border border-slate-800 hover:border-amber-500/50 text-slate-400 hover:text-white px-5 py-3 rounded-2xl flex items-center justify-center gap-3 transition-all active:scale-95 shadow-xl group"
+          >
+            {isSyncing ? <Loader2 size={18} className="animate-spin text-amber-500" /> : <RefreshCw size={18} className="group-hover:rotate-180 transition-transform duration-700" />}
+          </button>
+        </div>
       </div>
 
       <div className="space-y-4 pb-24 relative">
-        {isSyncing && dynamicPlayers.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-20 gap-4 opacity-60">
-             <Loader2 size={48} className="text-amber-500 animate-spin" />
-             <span className="text-xs font-tactical font-black text-slate-500 tracking-[0.4em] uppercase">Intercepting Mesh Signals...</span>
-          </div>
-        )}
+        {dynamicPlayers.map((player) => {
+          const isShadow = player.id?.startsWith('shadow');
+          const isLive = player.lastActive && (Date.now() - player.lastActive < 600000); // Active in last 10m
 
-        {dynamicPlayers.map((player) => (
-          <div 
-            key={player.id || player.username} 
-            className={`flex items-center p-5 rounded-[2rem] border transition-all duration-500 animate-in slide-in-from-bottom-4 fade-in ${
-              player.isUser 
-              ? 'bg-amber-500/10 border-amber-500 shadow-[0_0_30px_rgba(245,158,11,0.2)] ring-1 ring-amber-500/50 scale-[1.02]' 
-              : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
-            }`}
-          >
-            <div className="w-12 flex flex-col items-center shrink-0">
-              {player.rank <= 3 ? (
-                <Medal size={30} className={
-                  player.rank === 1 ? 'text-yellow-400 fill-yellow-400/20 drop-shadow-[0_0_10px_rgba(250,204,21,0.5)]' : 
-                  player.rank === 2 ? 'text-slate-300 fill-slate-300/20' : 
-                  'text-amber-600 fill-amber-600/20'
-                } />
-              ) : (
-                <span className="font-tactical font-black text-slate-500 text-lg">{player.rank}</span>
-              )}
-            </div>
+          return (
+            <div 
+              key={player.id || player.username} 
+              className={`flex items-center p-5 rounded-[2rem] border transition-all duration-500 group ${
+                player.isUser 
+                ? 'bg-amber-500/10 border-amber-500 shadow-[0_0_40px_rgba(245,158,11,0.15)] scale-[1.02] z-10' 
+                : 'bg-slate-900/40 border-slate-800 hover:border-slate-700'
+              }`}
+            >
+              <div className="w-12 flex flex-col items-center shrink-0">
+                {player.rank <= 3 ? (
+                  <Medal size={28} className={`${
+                    player.rank === 1 ? 'text-yellow-400 drop-shadow-[0_0_12px_rgba(250,204,21,0.6)]' : 
+                    player.rank === 2 ? 'text-slate-300' : 
+                    'text-amber-600'
+                  } animate-pulse`} />
+                ) : (
+                  <span className="font-tactical font-black text-slate-600 text-lg">#{player.rank}</span>
+                )}
+              </div>
 
-            <div className={`w-14 h-14 bg-slate-800 rounded-full flex items-center justify-center text-3xl mx-4 shrink-0 border-2 shadow-inner transition-transform duration-500 ${player.isUser ? 'border-amber-500' : 'border-slate-700'}`}>
-              {player.avatar}
-            </div>
+              <div className="relative mx-4 shrink-0">
+                <div className={`w-14 h-14 bg-slate-800 rounded-full flex items-center justify-center text-3xl border-2 transition-all ${player.isUser ? 'border-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.4)]' : 'border-slate-700 group-hover:border-slate-500'}`}>
+                  {player.avatar}
+                </div>
+                {isLive && !isShadow && (
+                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-slate-950 shadow-[0_0_10px_rgba(16,185,129,0.8)] animate-pulse"></div>
+                )}
+              </div>
 
-            <div className="flex-1 min-w-0">
-              <h3 className={`font-tactical font-black text-base sm:text-lg uppercase truncate ${player.isUser ? 'text-amber-500' : 'text-white'}`}>
-                {player.username}
-                {player.isUser && <span className="ml-2 text-[9px] px-2 py-1 bg-amber-500 text-slate-950 rounded-lg font-bold italic inline-block">NODE: YOU</span>}
-              </h3>
-              <div className="flex items-center gap-2 mt-1">
-                <Zap size={12} className="text-amber-500 fill-amber-500 shrink-0" />
-                <span className="text-[11px] font-bold text-slate-400 whitespace-nowrap tracking-widest">{player.xp.toLocaleString()} XP DETECTED</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className={`font-tactical font-black text-base uppercase truncate ${player.isUser ? 'text-amber-500' : 'text-white'}`}>
+                    {player.username}
+                  </h3>
+                  {player.isUser && <span className="text-[8px] px-2 py-0.5 bg-amber-500 text-slate-950 rounded-lg font-black uppercase tracking-tighter">ME</span>}
+                  {isShadow && <span className="text-[8px] px-2 py-0.5 border border-slate-700 text-slate-600 rounded-lg font-black uppercase tracking-tighter opacity-50">ELITE CORE</span>}
+                  {isLive && !player.isUser && !isShadow && (
+                    <span className="text-[8px] px-2 py-0.5 bg-emerald-500/20 text-emerald-500 rounded-lg font-black uppercase tracking-tighter flex items-center gap-1">
+                      <Activity size={8} /> LIVE
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <Zap size={12} className="text-amber-500 fill-amber-500" />
+                  <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">{player.xp.toLocaleString()} XP ACHIEVED</span>
+                </div>
+              </div>
+
+              <div className="hidden xs:block px-4 py-2 rounded-xl bg-slate-950 border border-slate-800 text-[9px] font-tactical font-black text-slate-500 tracking-widest uppercase shadow-inner">
+                {player.rank === 1 ? 'SUPREME' : player.rank <= 5 ? 'COMMAND' : 'TACTICAL'}
               </div>
             </div>
+          );
+        })}
+      </div>
 
-            <div className={`text-right ml-4 shrink-0 hidden xs:block`}>
-               <div className={`px-4 py-2 rounded-xl border font-tactical font-black text-[9px] tracking-widest uppercase italic transition-colors ${
-                 player.rank === 1 ? 'border-yellow-500/40 text-yellow-400 bg-yellow-400/5' :
-                 player.rank === 2 ? 'border-slate-400/40 text-slate-400 bg-slate-400/5' :
-                 player.rank === 3 ? 'border-amber-700/40 text-amber-600 bg-amber-600/5' :
-                 'border-slate-800 text-slate-600'
-               }`}>
-                 {player.rank === 1 ? 'SUPREME' : player.rank === 2 ? 'ELITE-II' : player.rank === 3 ? 'ELITE-III' : 'STABLE'}
-               </div>
-            </div>
-          </div>
-        ))}
-        
-        {dynamicPlayers.length === 0 && !isSyncing && (
-           <div className="text-center py-20 opacity-30">
-              <Radio size={48} className="mx-auto mb-4 text-slate-600" />
-              <p className="font-tactical font-black text-xs uppercase tracking-widest">No Active Neural Signals Detected</p>
-           </div>
-        )}
+      <div className="mt-10 p-6 bg-slate-900/40 border border-slate-800 rounded-[2rem] flex flex-col items-center gap-4 text-center">
+         <Info size={24} className="text-slate-500" />
+         <p className="text-[10px] font-tactical font-bold text-slate-500 uppercase tracking-widest leading-relaxed max-w-sm">
+           Share your <span className="text-amber-500 underline">Neural Link</span> to bring your squad into the mesh. Compete real-time across all global sectors.
+         </p>
       </div>
     </div>
   );

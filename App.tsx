@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { TabType, World, Chapter, Mission, Player, NeuralSignal, GlobalMesh } from './types';
 import HomeScreen from './screens/HomeScreen';
 import OpportunitiesScreen from './screens/OpportunitiesScreen';
@@ -16,18 +16,18 @@ import {
   Briefcase, 
   Trophy, 
   User, 
-  Bell, 
   Zap, 
   ChevronLeft,
   Sun,
   Moon,
-  Lock,
-  UserPlus,
-  Radio,
-  Wifi
+  Wifi,
+  WifiOff,
+  Activity,
+  Share2,
+  CheckCircle2
 } from 'lucide-react';
 
-// Shared Global Registry (Publicly accessible for sync)
+// GLOBAL MESH ENDPOINT - Shared registry for all link users
 const SYNC_ENDPOINT = `https://jsonblob.com/api/jsonBlob/1344400262145327104`;
 
 const App: React.FC = () => {
@@ -38,6 +38,9 @@ const App: React.FC = () => {
   const [showAuth, setShowAuth] = useState<boolean>(false);
   const [globalMesh, setGlobalMesh] = useState<GlobalMesh>({ commanders: [], signals: [] });
   const [isSyncing, setIsSyncing] = useState(false);
+  const [syncError, setSyncError] = useState(false);
+  const [notification, setNotification] = useState<{message: string, type: 'info' | 'success'} | null>(null);
+  const syncRetryRef = useRef(0);
   
   const [userProfile, setUserProfile] = useState(() => {
     const saved = localStorage.getItem('mission_genesis_profile');
@@ -53,32 +56,66 @@ const App: React.FC = () => {
   });
 
   const userXp = useMemo(() => {
-    const earned = completedMissions.reduce((total, id) => {
+    return completedMissions.reduce((total, id) => {
       const mission = MISSIONS.find(m => m.id === id);
       return total + (mission?.xp || 0);
     }, 0);
-    return earned; // Base XP is 0
   }, [completedMissions]);
 
-  // Level 0 at start: 0-999 XP = LVL 0
   const userLevel = Math.floor(userXp / 1000);
 
-  // Sync Logic: Global Neural Mesh Handshake
-  const syncWithMesh = async (forcePush = false) => {
+  const notify = (message: string, type: 'info' | 'success' = 'info') => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 3500);
+  };
+
+  const shareNeuralLink = async () => {
+    // Normalize URL to strip session garbage and ensure friends land on the same mesh
+    const cleanUrl = window.location.origin + window.location.pathname;
+    const inviteText = `Commander ${userProfile.username} has initiated a Neural Uplink. Join the Genesis Mesh and secure your sector: ${cleanUrl}`;
+    
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: 'Mission Genesis: Neural Uplink',
+          text: inviteText,
+          url: cleanUrl,
+        });
+      } else {
+        await navigator.clipboard.writeText(inviteText);
+        notify("UPLINK LINK COPIED TO CLIPBOARD", "success");
+      }
+      broadcastSignal("generated a Recruitment Uplink");
+    } catch (err) {
+      notify("LINK SHARING INTERRUPTED", "info");
+    }
+  };
+
+  const syncWithMesh = useCallback(async (forcePush = false) => {
     if (!isLoggedIn) return;
     setIsSyncing(true);
+    
     try {
-      const res = await fetch(SYNC_ENDPOINT);
-      const data: GlobalMesh = await res.json();
+      const res = await fetch(SYNC_ENDPOINT, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json', 'Cache-Control': 'no-cache' }
+      });
+      
+      let data: GlobalMesh;
+      if (res.status === 404 || !res.ok) {
+        // Fallback for first-time initialization
+        data = { commanders: [], signals: [] };
+      } else {
+        data = await res.json();
+      }
       
       let updatedMesh = { ...data };
       if (!updatedMesh.commanders) updatedMesh.commanders = [];
       if (!updatedMesh.signals) updatedMesh.signals = [];
       
-      // Update User in Global Mesh
       const userIndex = updatedMesh.commanders.findIndex(c => c.id === userProfile.id);
       const userEntry: Player = {
-        rank: 0,
+        rank: 0, 
         username: userProfile.username,
         xp: userXp,
         avatar: userProfile.avatar,
@@ -86,35 +123,36 @@ const App: React.FC = () => {
         lastActive: Date.now()
       };
 
+      let shouldPush = forcePush;
       if (userIndex === -1) {
         updatedMesh.commanders.push(userEntry);
+        shouldPush = true;
       } else {
-        // Sync progress: local or remote higher XP wins
-        if (userXp > updatedMesh.commanders[userIndex].xp || forcePush) {
+        // Only push if local progress is ahead of global mesh
+        if (userXp > updatedMesh.commanders[userIndex].xp || updatedMesh.commanders[userIndex].username !== userProfile.username) {
           updatedMesh.commanders[userIndex] = userEntry;
-        } else if (updatedMesh.commanders[userIndex].xp > userXp) {
-          // If remote XP is higher (e.g. from another session), we might want to update local state eventually
-          // For now, keep it simple.
+          shouldPush = true;
         }
       }
 
-      // Cleanup signals (keep last 15)
-      updatedMesh.signals = updatedMesh.signals.slice(-15);
-
-      // Write back
-      await fetch(SYNC_ENDPOINT, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedMesh)
-      });
+      if (shouldPush) {
+        await fetch(SYNC_ENDPOINT, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatedMesh)
+        });
+      }
 
       setGlobalMesh(updatedMesh);
+      setSyncError(false);
+      syncRetryRef.current = 0;
     } catch (e) {
-      console.warn("Uplink Failed. Running standalone.", e);
+      syncRetryRef.current += 1;
+      if (syncRetryRef.current > 3) setSyncError(true);
     } finally {
       setIsSyncing(false);
     }
-  };
+  }, [isLoggedIn, userXp, userProfile]);
 
   const broadcastSignal = async (action: string) => {
     try {
@@ -126,7 +164,7 @@ const App: React.FC = () => {
         action,
         timestamp: Date.now()
       };
-      data.signals = [...(data.signals || []), signal].slice(-15);
+      data.signals = [...(data.signals || []), signal].slice(-20);
       await fetch(SYNC_ENDPOINT, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -139,24 +177,21 @@ const App: React.FC = () => {
   useEffect(() => {
     if (isLoggedIn) {
       syncWithMesh();
-      const interval = setInterval(syncWithMesh, 60000); 
+      const interval = setInterval(() => syncWithMesh(false), 20000); 
       return () => clearInterval(interval);
     }
-  }, [isLoggedIn]);
-
-  // Sync on XP changes
-  useEffect(() => {
-    if (isLoggedIn) syncWithMesh();
-  }, [userXp]);
+  }, [isLoggedIn, syncWithMesh]);
 
   useEffect(() => {
-    if (theme === 'light') {
-      document.body.classList.add('light-mode');
-      document.documentElement.classList.remove('dark');
-    } else {
-      document.body.classList.remove('light-mode');
-      document.documentElement.classList.add('dark');
+    if (isLoggedIn && userXp > 0) {
+      const timer = setTimeout(() => syncWithMesh(true), 2000);
+      return () => clearTimeout(timer);
     }
+  }, [userXp, isLoggedIn, syncWithMesh]);
+
+  useEffect(() => {
+    if (theme === 'light') document.body.classList.add('light-mode');
+    else document.body.classList.remove('light-mode');
   }, [theme]);
 
   useEffect(() => {
@@ -169,35 +204,17 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('mission_genesis_completed', JSON.stringify(completedMissions));
   }, [completedMissions]);
+  
   useEffect(() => {
     localStorage.setItem('mission_genesis_profile', JSON.stringify(userProfile));
   }, [userProfile]);
-  useEffect(() => {
-    localStorage.setItem('mission_genesis_theme', theme);
-  }, [theme]);
 
   const handleMissionComplete = (missionId: number, worldId: string) => {
     if (!completedMissions.includes(missionId)) {
       setCompletedMissions(prev => [...prev, missionId]);
       broadcastSignal(`secured Sector ${worldId.toUpperCase()} Node`);
+      notify(`NODE SECURED: +${MISSIONS.find(m => m.id === missionId)?.xp} XP`, "success");
     }
-  };
-
-  const pushScreen = (screen: string, props: any = {}) => {
-    if (!isLoggedIn) {
-      setShowAuth(true);
-      return;
-    }
-    setNavigationStack([...navigationStack, { screen, props }]);
-  };
-
-  const popScreen = () => {
-    setNavigationStack(navigationStack.slice(0, -1));
-  };
-
-  const returnToOps = () => {
-    setNavigationStack([]);
-    setActiveTab('home');
   };
 
   const handleLogin = () => {
@@ -205,17 +222,16 @@ const App: React.FC = () => {
     setShowAuth(false);
     localStorage.setItem('mission_genesis_logged_in', 'true');
     broadcastSignal(`established Neural Protocol`);
+    syncWithMesh(true);
+    notify("IDENTITY VERIFIED. MESH SYNCING...", "success");
   };
 
   const handleLogout = () => {
     setIsLoggedIn(false);
-    setShowAuth(false);
     localStorage.removeItem('mission_genesis_logged_in');
     setNavigationStack([]);
     setActiveTab('home');
   };
-
-  const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
 
   const renderScreen = () => {
     if (!isLoggedIn) {
@@ -227,27 +243,11 @@ const App: React.FC = () => {
       const current = navigationStack[navigationStack.length - 1];
       switch (current.screen) {
         case 'challenges':
-          return <ChallengeScreen 
-            world={current.props.world} 
-            completedMissions={completedMissions}
-            onBack={popScreen} 
-            onSelectChapter={(chapter) => pushScreen('missions', { chapter })} 
-          />;
+          return <ChallengeScreen world={current.props.world} completedMissions={completedMissions} onBack={() => setNavigationStack(navigationStack.slice(0, -1))} onSelectChapter={(chapter) => setNavigationStack([...navigationStack, { screen: 'missions', props: { chapter } }])} />;
         case 'missions':
-          return < MissionsScreen 
-            chapter={current.props.chapter} 
-            completedMissions={completedMissions}
-            onBack={popScreen} 
-            onSelectMission={(mission) => pushScreen('missionDetail', { mission })} 
-          />;
+          return <MissionsScreen chapter={current.props.chapter} completedMissions={completedMissions} onBack={() => setNavigationStack(navigationStack.slice(0, -1))} onSelectMission={(mission) => setNavigationStack([...navigationStack, { screen: 'missionDetail', props: { mission } }])} />;
         case 'missionDetail':
-          return <MissionDetailScreen 
-            mission={current.props.mission} 
-            isCompleted={completedMissions.includes(current.props.mission.id)}
-            onComplete={(id, worldId) => handleMissionComplete(id, worldId)}
-            onBack={popScreen} 
-            onReturnToOps={returnToOps}
-          />;
+          return <MissionDetailScreen mission={current.props.mission} isCompleted={completedMissions.includes(current.props.mission.id)} onComplete={(id, worldId) => handleMissionComplete(id, worldId)} onBack={() => setNavigationStack(navigationStack.slice(0, -1))} onReturnToOps={() => setNavigationStack([])} />;
         default:
           return null;
       }
@@ -255,113 +255,91 @@ const App: React.FC = () => {
 
     switch (activeTab) {
       case 'home':
-        return <HomeScreen 
-          completedMissions={completedMissions}
-          signals={globalMesh.signals}
-          onSelectWorld={(world) => pushScreen('challenges', { world })} 
-        />;
+        return <HomeScreen completedMissions={completedMissions} signals={globalMesh.signals} onSelectWorld={(world) => setNavigationStack([{ screen: 'challenges', props: { world } }])} isSyncing={isSyncing} />;
       case 'opportunities':
         return <OpportunitiesScreen />;
       case 'leaderboard':
-        return <LeaderboardScreen userXp={userXp} userProfile={userProfile} meshCommanders={globalMesh.commanders} isSyncing={isSyncing} onRefresh={() => syncWithMesh(true)} />;
+        return <LeaderboardScreen userXp={userXp} userProfile={userProfile} meshCommanders={globalMesh.commanders} isSyncing={isSyncing} onRefresh={() => syncWithMesh(true)} onShareInvite={shareNeuralLink} />;
       case 'profile':
-        return <ProfileScreen 
-          userXp={userXp} 
-          userLevel={userLevel}
-          userProfile={userProfile}
-          onUpdateProfile={(p) => setUserProfile({ ...userProfile, ...p })}
-          completedMissions={completedMissions} 
-          onLogout={handleLogout} 
-        />;
+        return <ProfileScreen userXp={userXp} userLevel={userLevel} userProfile={userProfile} onUpdateProfile={(p) => setUserProfile({ ...userProfile, ...p })} completedMissions={completedMissions} onLogout={handleLogout} onShareInvite={shareNeuralLink} />;
       default:
-        return <HomeScreen completedMissions={completedMissions} signals={globalMesh.signals} onSelectWorld={(world) => pushScreen('challenges', { world })} />;
+        return <HomeScreen completedMissions={completedMissions} signals={globalMesh.signals} onSelectWorld={(world) => setNavigationStack([{ screen: 'challenges', props: { world } }])} isSyncing={isSyncing} />;
     }
   };
 
   return (
-    <div className={`flex justify-center h-screen w-screen overflow-hidden ${theme === 'dark' ? 'bg-slate-950' : 'bg-slate-100'} transition-colors duration-500`}>
-      <div className={`fixed inset-0 pointer-events-none opacity-10 bg-[url('https://www.transparenttextures.com/patterns/circuit-board.png')] ${theme === 'light' ? 'invert' : ''}`}></div>
-      
-      <div className={`w-full max-w-screen-xl h-screen flex flex-col relative md:shadow-[0_0_100px_rgba(0,0,0,0.4)] overflow-hidden border-x ${theme === 'dark' ? 'bg-slate-950 border-slate-800/50' : 'bg-white border-slate-200'}`}>
+    <div className={`flex justify-center h-screen w-screen overflow-hidden ${theme === 'dark' ? 'bg-slate-950 text-white' : 'bg-slate-100 text-slate-900'} transition-colors duration-500`}>
+      <div className={`w-full max-w-screen-xl h-screen flex flex-col relative border-x ${theme === 'dark' ? 'bg-slate-950 border-slate-800/50' : 'bg-white border-slate-200 shadow-2xl'}`}>
         
-        <header className={`px-4 md:px-10 pt-10 pb-4 flex items-center justify-between z-50 sticky top-0 transition-all shrink-0 ${theme === 'dark' ? 'bg-slate-950/80 backdrop-blur-md' : 'bg-white/80 backdrop-blur-md'}`}>
+        <header className="px-6 pt-10 pb-4 flex items-center justify-between z-50 shrink-0">
           {isLoggedIn ? (
             <div className="flex w-full items-center justify-between">
-              <div className="flex items-center gap-4 min-w-0">
+              <div className="flex items-center gap-4">
                 {navigationStack.length > 0 && (
-                  <button 
-                    onClick={popScreen}
-                    className={`p-2 border rounded-xl transition-all shadow-lg shrink-0 ${theme === 'dark' ? 'bg-slate-800/50 border-slate-700 text-amber-500 hover:bg-slate-700' : 'bg-white border-slate-200 text-amber-600 hover:bg-slate-100'}`}
-                  >
-                    <ChevronLeft size={24} strokeWidth={3} />
+                  <button onClick={() => setNavigationStack(navigationStack.slice(0, -1))} className="p-2 border rounded-xl bg-slate-800/50 border-slate-700 text-amber-500 hover:bg-slate-700 transition-all">
+                    <ChevronLeft size={24} />
                   </button>
                 )}
-                <div className={`px-4 py-2 rounded-2xl flex items-center gap-3 shadow-lg group overflow-hidden border truncate shrink min-w-0 ${theme === 'dark' ? 'bg-slate-900 border-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.15)]' : 'bg-white border-amber-200'}`}>
-                  <Zap size={16} className={`text-amber-500 fill-amber-500 shrink-0 ${isSyncing ? 'animate-bounce' : 'animate-pulse'}`} />
-                  <span className={`font-tactical text-xs md:text-sm font-black tracking-tighter truncate ${theme === 'dark' ? 'text-amber-500' : 'text-amber-600'}`}>
+                <div className="px-4 py-2 rounded-2xl bg-slate-900 border border-amber-500/40 flex items-center gap-3 shadow-[0_0_20px_rgba(245,158,11,0.15)] group relative">
+                  <Zap size={16} className={`text-amber-500 fill-amber-500 ${isSyncing ? 'animate-bounce' : 'animate-pulse'}`} />
+                  <span className="font-tactical text-xs md:text-sm font-black tracking-tighter text-amber-500">
                     {userXp.toLocaleString()} XP • LVL {userLevel}
                   </span>
-                  <div className="absolute inset-0 shimmer opacity-20 group-hover:opacity-40 pointer-events-none"></div>
+                  {isSyncing && (
+                    <div className="absolute inset-0 bg-amber-500/20 rounded-2xl animate-ping pointer-events-none"></div>
+                  )}
                 </div>
               </div>
               
-              <div className="flex items-center gap-3 shrink-0 ml-2">
-                <div className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full border text-[9px] font-tactical font-black uppercase tracking-widest ${theme === 'dark' ? 'bg-slate-900 border-emerald-500/30 text-emerald-500' : 'bg-emerald-50 border-emerald-200 text-emerald-600'}`}>
-                  <Wifi size={10} className={isSyncing ? 'animate-pulse' : ''} />
-                  UPLINK: ACTIVE
-                </div>
+              <div className="flex items-center gap-3">
                 <button 
-                  onClick={toggleTheme}
-                  className={`p-2.5 border rounded-xl transition-all ${theme === 'dark' ? 'bg-slate-800/50 border-slate-700 text-slate-400 hover:text-amber-500' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-100'}`}
+                  onClick={shareNeuralLink}
+                  className="hidden md:flex items-center gap-2 p-2.5 border rounded-xl bg-slate-800/50 border-slate-700 text-amber-500 hover:bg-slate-700 transition-all shadow-lg active:scale-95"
+                  title="Invite Squad"
                 >
+                  <Share2 size={20} />
+                </button>
+                <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-[9px] font-tactical font-black uppercase tracking-widest transition-all duration-500 ${
+                  syncError 
+                  ? 'text-rose-500 border-rose-500/30 bg-rose-500/5' 
+                  : isSyncing 
+                    ? 'text-amber-500 border-amber-500/30 bg-amber-500/5 animate-pulse' 
+                    : 'text-emerald-500 border-emerald-500/30 bg-emerald-500/5 shadow-[0_0_15px_rgba(16,185,129,0.1)]'
+                }`}>
+                  {syncError ? <WifiOff size={10} /> : <Wifi size={10} className={isSyncing ? 'animate-pulse' : ''} />}
+                  {syncError ? 'SUB-SPACE LINK' : isSyncing ? 'SYNCING...' : 'NEURAL MESH ACTIVE'}
+                </div>
+                <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="p-2.5 border rounded-xl dark:bg-slate-800/50 dark:border-slate-700 dark:text-slate-400 bg-white border-slate-200 text-slate-500 shadow-md">
                   {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
                 </button>
-                <div className="relative group hidden sm:block">
-                  <div className={`p-2.5 border rounded-xl transition-all cursor-pointer ${theme === 'dark' ? 'bg-slate-800/50 border-slate-700 hover:bg-slate-700' : 'bg-white border-slate-200 hover:bg-slate-100'}`}>
-                    <Bell size={20} className={theme === 'dark' ? 'text-slate-400 group-hover:text-amber-500' : 'text-slate-500'} />
-                  </div>
-                  <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-600 rounded-full border-2 border-slate-950 animate-bounce"></span>
-                </div>
               </div>
             </div>
           ) : (
-            <div className="flex w-full items-center justify-between">
-               <div className="flex items-center gap-2">
-                 <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center shadow-lg">
-                    <Lock size={20} className="text-slate-950" strokeWidth={3} />
-                 </div>
-               </div>
-               
-               <div className="flex items-center gap-4">
-                 <button 
-                   onClick={toggleTheme}
-                   className={`p-2.5 border rounded-full transition-all ${theme === 'dark' ? 'bg-slate-800/50 border-slate-700 text-slate-400 hover:text-amber-500' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-100 shadow-md'}`}
-                 >
-                   {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-                 </button>
-
-                 {!showAuth && (
-                   <button 
-                     onClick={() => setShowAuth(true)}
-                     className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-tactical font-black text-[10px] sm:text-xs px-6 py-2.5 rounded-xl shadow-[0_10px_20px_rgba(245,158,11,0.3)] transition-all active:scale-95 flex items-center gap-2 group"
-                   >
-                     <UserPlus size={14} className="group-hover:scale-110 transition-transform" />
-                     ESTABLISH PROTOCOL
-                   </button>
-                 )}
-               </div>
+            <div className="flex w-full items-center justify-center">
+              <h1 className="text-2xl font-tactical font-black text-amber-500 italic tracking-[0.2em]">MISSION GENESIS</h1>
             </div>
           )}
         </header>
 
-        <main className={`flex-1 overflow-y-auto custom-scrollbar relative`}>
+        <main className="flex-1 overflow-y-auto custom-scrollbar relative">
           <div className={`${isLoggedIn ? 'pb-32' : 'pb-10'}`}>
             {renderScreen()}
           </div>
         </main>
 
+        {notification && (
+          <div className="fixed bottom-28 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-bottom-4 fade-in duration-400">
+            <div className={`px-6 py-3 rounded-2xl border backdrop-blur-xl shadow-2xl flex items-center gap-3 font-tactical font-black text-[10px] tracking-widest uppercase ${
+              notification.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.2)]' : 'bg-amber-500/10 border-amber-500/30 text-amber-500'
+            }`}>
+              {notification.type === 'success' ? <CheckCircle2 size={16} /> : <Activity size={16} className="animate-pulse" />}
+              {notification.message}
+            </div>
+          </div>
+        )}
+
         {isLoggedIn && (
-          <nav className={`fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-3rem)] max-w-md md:max-w-lg backdrop-blur-2xl border rounded-3xl px-6 py-4 flex justify-between items-center z-50 shadow-[0_20px_60px_rgba(0,0,0,0.4)] transition-all ${theme === 'dark' ? 'bg-slate-900/80 border-slate-700/50' : 'bg-white/80 border-slate-200/50'}`}>
+          <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-3rem)] max-w-lg backdrop-blur-2xl border border-slate-700/50 bg-slate-900/80 rounded-3xl px-6 py-4 flex justify-between items-center z-50 shadow-3xl">
             {[
               { id: 'home', icon: Home, label: 'Ops' },
               { id: 'opportunities', icon: Briefcase, label: 'Growth' },
@@ -372,25 +350,15 @@ const App: React.FC = () => {
               return (
                 <button
                   key={tab.id}
-                  onClick={() => {
-                    setNavigationStack([]);
-                    setActiveTab(tab.id as TabType);
-                  }}
-                  className={`flex flex-col items-center gap-1 transition-all duration-300 relative group flex-1`}
+                  onClick={() => { setNavigationStack([]); setActiveTab(tab.id as TabType); }}
+                  className={`flex flex-col items-center gap-1 flex-1 transition-all ${isActive ? 'text-amber-500' : 'text-slate-500'}`}
                 >
-                  <div className={`p-3 rounded-2xl transition-all duration-500 ${
-                    isActive 
-                      ? 'bg-amber-500 text-slate-950 shadow-[0_0_30px_rgba(245,158,11,0.6)] -translate-y-3' 
-                      : `${theme === 'dark' ? 'text-slate-500 hover:text-slate-300 hover:bg-slate-800' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`
-                  }`}>
+                  <div className={`p-3 rounded-2xl transition-all ${isActive ? 'bg-amber-500 text-slate-950 shadow-[0_0_30px_rgba(245,158,11,0.6)] -translate-y-2' : 'hover:bg-slate-800/50'}`}>
                     <tab.icon size={24} strokeWidth={isActive ? 3 : 2} />
                   </div>
-                  <span className={`text-[10px] uppercase font-tactical font-black tracking-[0.2em] transition-opacity duration-300 whitespace-nowrap ${
-                    isActive ? 'opacity-100 text-amber-500' : 'opacity-0'
-                  }`}>
+                  <span className={`text-[10px] uppercase font-tactical font-black tracking-[0.2em] transition-opacity duration-300 ${isActive ? 'opacity-100' : 'opacity-0'}`}>
                     {tab.label}
                   </span>
-                  {isActive && <div className="absolute -bottom-1 w-1.5 h-1.5 bg-amber-500 rounded-full shadow-[0_0_8px_amber]"></div>}
                 </button>
               );
             })}
