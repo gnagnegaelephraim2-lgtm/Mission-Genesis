@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { TabType, World, Chapter, Mission } from './types';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { TabType, World, Chapter, Mission, Player, NeuralSignal, GlobalMesh } from './types';
 import HomeScreen from './screens/HomeScreen';
 import OpportunitiesScreen from './screens/OpportunitiesScreen';
 import LeaderboardScreen from './screens/LeaderboardScreen';
@@ -22,8 +22,14 @@ import {
   Sun,
   Moon,
   Lock,
-  UserPlus
+  UserPlus,
+  Radio,
+  Wifi
 } from 'lucide-react';
+
+// Shared Global Registry ID (Publicly accessible for sync)
+const GLOBAL_MESH_ID = '987c6543-210e-1234-5678-9abcdef01234'; 
+const SYNC_ENDPOINT = `https://jsonblob.com/api/jsonBlob/1344400262145327104`; // Pre-configured global node
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('home');
@@ -31,24 +37,21 @@ const App: React.FC = () => {
   const [completedMissions, setCompletedMissions] = useState<number[]>([]);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [showAuth, setShowAuth] = useState<boolean>(false);
-  const [userProfile, setUserProfile] = useState({
-    username: 'YouPlayer',
-    avatar: '🦅'
+  const [globalMesh, setGlobalMesh] = useState<GlobalMesh>({ commanders: [], signals: [] });
+  const [isSyncing, setIsSyncing] = useState(false);
+  
+  const [userProfile, setUserProfile] = useState(() => {
+    const saved = localStorage.getItem('mission_genesis_profile');
+    return saved ? JSON.parse(saved) : {
+      username: 'Command' + Math.floor(Math.random() * 900 + 100),
+      avatar: '🦅',
+      id: crypto.randomUUID()
+    };
   });
+
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
     return localStorage.getItem('mission_genesis_logged_in') === 'true';
   });
-
-  // Theme Sync
-  useEffect(() => {
-    if (theme === 'light') {
-      document.body.classList.add('light-mode');
-      document.documentElement.classList.remove('dark');
-    } else {
-      document.body.classList.remove('light-mode');
-      document.documentElement.classList.add('dark');
-    }
-  }, [theme]);
 
   const userXp = useMemo(() => {
     const base = 2450;
@@ -61,17 +64,98 @@ const App: React.FC = () => {
 
   const userLevel = Math.floor(userXp / 1000) + 1;
 
+  // Sync Logic: Fetch Global Mesh
+  const syncWithMesh = async (forcePush = false) => {
+    if (!isLoggedIn) return;
+    setIsSyncing(true);
+    try {
+      const res = await fetch(SYNC_ENDPOINT);
+      const data: GlobalMesh = await res.json();
+      
+      let updatedMesh = { ...data };
+      
+      // Upsert User Profile in Global Mesh
+      const userIndex = updatedMesh.commanders.findIndex(c => c.id === userProfile.id);
+      const userEntry: Player = {
+        rank: 0,
+        username: userProfile.username,
+        xp: userXp,
+        avatar: userProfile.avatar,
+        id: userProfile.id,
+        lastActive: Date.now()
+      };
+
+      if (userIndex === -1) {
+        updatedMesh.commanders.push(userEntry);
+      } else {
+        // Only update if current XP is higher or forced
+        if (userXp >= updatedMesh.commanders[userIndex].xp || forcePush) {
+          updatedMesh.commanders[userIndex] = userEntry;
+        }
+      }
+
+      // Cleanup old signals (keep last 10)
+      updatedMesh.signals = updatedMesh.signals.slice(-10);
+
+      // Push back to Global Mesh
+      await fetch(SYNC_ENDPOINT, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedMesh)
+      });
+
+      setGlobalMesh(updatedMesh);
+    } catch (e) {
+      console.warn("Uplink to Mesh Failed. Running in standalone mode.", e);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const broadcastSignal = async (action: string) => {
+    try {
+      const res = await fetch(SYNC_ENDPOINT);
+      const data: GlobalMesh = await res.json();
+      const signal: NeuralSignal = {
+        id: crypto.randomUUID(),
+        commander: userProfile.username,
+        action,
+        timestamp: Date.now()
+      };
+      data.signals = [...data.signals, signal].slice(-12);
+      await fetch(SYNC_ENDPOINT, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      setGlobalMesh(data);
+    } catch (e) {}
+  };
+
+  // Initial Sync and Polling
+  useEffect(() => {
+    if (isLoggedIn) {
+      syncWithMesh();
+      const interval = setInterval(syncWithMesh, 60000); // Polling every minute
+      return () => clearInterval(interval);
+    }
+  }, [isLoggedIn, userXp]); // Re-sync when XP changes
+
+  useEffect(() => {
+    if (theme === 'light') {
+      document.body.classList.add('light-mode');
+      document.documentElement.classList.remove('dark');
+    } else {
+      document.body.classList.remove('light-mode');
+      document.documentElement.classList.add('dark');
+    }
+  }, [theme]);
+
   useEffect(() => {
     const savedMissions = localStorage.getItem('mission_genesis_completed');
     if (savedMissions) {
       try { setCompletedMissions(JSON.parse(savedMissions)); } catch (e) {}
     }
-    const savedProfile = localStorage.getItem('mission_genesis_profile');
-    if (savedProfile) {
-      try { setUserProfile(JSON.parse(savedProfile)); } catch (e) {}
-    }
-    const savedTheme = localStorage.getItem('mission_genesis_theme');
-    if (savedTheme) setTheme(savedTheme as 'dark' | 'light');
   }, []);
 
   useEffect(() => {
@@ -87,6 +171,8 @@ const App: React.FC = () => {
   const handleMissionComplete = (missionId: number, worldId: string) => {
     if (!completedMissions.includes(missionId)) {
       setCompletedMissions(prev => [...prev, missionId]);
+      const mission = MISSIONS.find(m => m.id === missionId);
+      broadcastSignal(`secured Sector ${worldId.toUpperCase()} Node`);
     }
   };
 
@@ -111,6 +197,7 @@ const App: React.FC = () => {
     setIsLoggedIn(true);
     setShowAuth(false);
     localStorage.setItem('mission_genesis_logged_in', 'true');
+    broadcastSignal(`established Neural Protocol`);
   };
 
   const handleLogout = () => {
@@ -125,9 +212,7 @@ const App: React.FC = () => {
 
   const renderScreen = () => {
     if (!isLoggedIn) {
-      if (showAuth) {
-        return <AuthScreen onLogin={handleLogin} />;
-      }
+      if (showAuth) return <AuthScreen onLogin={handleLogin} />;
       return <LandingScreen onGetStarted={() => setShowAuth(true)} />;
     }
 
@@ -165,23 +250,24 @@ const App: React.FC = () => {
       case 'home':
         return <HomeScreen 
           completedMissions={completedMissions}
+          signals={globalMesh.signals}
           onSelectWorld={(world) => pushScreen('challenges', { world })} 
         />;
       case 'opportunities':
         return <OpportunitiesScreen />;
       case 'leaderboard':
-        return <LeaderboardScreen userXp={userXp} userProfile={userProfile} />;
+        return <LeaderboardScreen userXp={userXp} userProfile={userProfile} meshCommanders={globalMesh.commanders} isSyncing={isSyncing} onRefresh={() => syncWithMesh(true)} />;
       case 'profile':
         return <ProfileScreen 
           userXp={userXp} 
           userLevel={userLevel}
           userProfile={userProfile}
-          onUpdateProfile={(p) => setUserProfile(p)}
+          onUpdateProfile={(p) => setUserProfile({ ...userProfile, ...p })}
           completedMissions={completedMissions} 
           onLogout={handleLogout} 
         />;
       default:
-        return <HomeScreen completedMissions={completedMissions} onSelectWorld={(world) => pushScreen('challenges', { world })} />;
+        return <HomeScreen completedMissions={completedMissions} signals={globalMesh.signals} onSelectWorld={(world) => pushScreen('challenges', { world })} />;
     }
   };
 
@@ -204,7 +290,7 @@ const App: React.FC = () => {
                   </button>
                 )}
                 <div className={`px-4 py-2 rounded-2xl flex items-center gap-3 shadow-lg group overflow-hidden border truncate shrink min-w-0 ${theme === 'dark' ? 'bg-slate-900 border-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.15)]' : 'bg-white border-amber-200'}`}>
-                  <Zap size={16} className="text-amber-500 fill-amber-500 animate-pulse shrink-0" />
+                  <Zap size={16} className={`text-amber-500 fill-amber-500 shrink-0 ${isSyncing ? 'animate-bounce' : 'animate-pulse'}`} />
                   <span className={`font-tactical text-xs md:text-sm font-black tracking-tighter truncate ${theme === 'dark' ? 'text-amber-500' : 'text-amber-600'}`}>
                     {userXp.toLocaleString()} XP • LVL {userLevel}
                   </span>
@@ -213,6 +299,10 @@ const App: React.FC = () => {
               </div>
               
               <div className="flex items-center gap-3 shrink-0 ml-2">
+                <div className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full border text-[9px] font-tactical font-black uppercase tracking-widest ${theme === 'dark' ? 'bg-slate-900 border-emerald-500/30 text-emerald-500' : 'bg-emerald-50 border-emerald-200 text-emerald-600'}`}>
+                  <Wifi size={10} className={isSyncing ? 'animate-pulse' : ''} />
+                  UPLINK: ACTIVE
+                </div>
                 <button 
                   onClick={toggleTheme}
                   className={`p-2.5 border rounded-xl transition-all ${theme === 'dark' ? 'bg-slate-800/50 border-slate-700 text-slate-400 hover:text-amber-500' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-100'}`}
@@ -233,7 +323,6 @@ const App: React.FC = () => {
                  <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center shadow-lg">
                     <Lock size={20} className="text-slate-950" strokeWidth={3} />
                  </div>
-                 {/* Branding removed in unauthenticated header to focus on minimalist tactical UI from screenshot */}
                </div>
                
                <div className="flex items-center gap-4">

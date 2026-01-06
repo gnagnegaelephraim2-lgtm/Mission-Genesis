@@ -1,14 +1,16 @@
 
 import React from 'react';
 import { WORLDS, MISSIONS } from '../constants';
-import { World } from '../types';
+import { World, NeuralSignal } from '../types';
+import { Radio, Activity } from 'lucide-react';
 
 interface HomeScreenProps {
   completedMissions: number[];
+  signals?: NeuralSignal[];
   onSelectWorld: (world: World) => void;
 }
 
-const HomeScreen: React.FC<HomeScreenProps> = ({ completedMissions, onSelectWorld }) => {
+const HomeScreen: React.FC<HomeScreenProps> = ({ completedMissions, signals = [], onSelectWorld }) => {
   const getProgress = (worldId: string) => {
     const worldMissions = MISSIONS.filter(m => m.worldId === worldId);
     if (worldMissions.length === 0) return 0;
@@ -25,7 +27,39 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ completedMissions, onSelectWorl
   };
 
   return (
-    <div className="p-6 md:p-10 scanlines">
+    <div className="p-4 sm:p-6 md:p-10 scanlines">
+      {/* NEURAL MESH BROADCAST TICKER */}
+      <div className="mb-8 relative overflow-hidden bg-slate-900/40 border-y border-amber-500/20 py-2 sm:py-3 group">
+         <div className="flex items-center absolute left-0 top-0 bottom-0 bg-slate-950 z-20 px-3 md:px-6 border-r border-amber-500/30">
+            <Radio size={14} className="text-amber-500 animate-pulse mr-2" />
+            <span className="text-[9px] font-tactical font-black text-amber-500 uppercase tracking-widest whitespace-nowrap">Neural Mesh Ticker</span>
+         </div>
+         <div className="flex gap-12 animate-[ticker-scroll_30s_linear_infinite] whitespace-nowrap pl-[150px] md:pl-[220px]">
+            {signals.length > 0 ? (
+              signals.map((sig) => (
+                <div key={sig.id} className="flex items-center gap-3 text-slate-400 font-mono text-[10px] uppercase">
+                   <Activity size={10} className="text-emerald-500" />
+                   <span className="text-white font-bold">{sig.commander}</span>
+                   <span className="opacity-60">{sig.action}</span>
+                   <span className="text-[8px] text-slate-600">[{new Date(sig.timestamp).toLocaleTimeString()}]</span>
+                </div>
+              ))
+            ) : (
+              <div className="flex items-center gap-3 text-slate-500 font-mono text-[10px] uppercase italic">
+                 Waiting for tactical signals from regional nodes...
+              </div>
+            )}
+            {/* Repeat for loop effect */}
+            {signals.map((sig) => (
+              <div key={sig.id + '-loop'} className="flex items-center gap-3 text-slate-400 font-mono text-[10px] uppercase">
+                 <Activity size={10} className="text-emerald-500" />
+                 <span className="text-white font-bold">{sig.commander}</span>
+                 <span className="opacity-60">{sig.action}</span>
+              </div>
+            ))}
+         </div>
+      </div>
+
       <div className="mb-10 relative text-left">
         <div className="absolute -left-6 md:-left-10 top-1/2 -translate-y-1/2 w-1.5 h-16 bg-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.4)]"></div>
         <h2 className="text-4xl md:text-5xl font-tactical font-black dark:text-white text-slate-900 tracking-tighter leading-none mb-3 glitch uppercase break-words" data-text="GAME WORLDS">
@@ -34,7 +68,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ completedMissions, onSelectWorl
         <p className="text-slate-500 text-[11px] md:text-xs font-tactical font-bold uppercase tracking-[0.3em]">Operational Readiness: Level 4 // Global Sector Grid</p>
       </div>
 
-      {/* Grid adapts to screen size: 1 col mobile, 2 cols tablet, 3 cols desktop */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8 pb-20">
         {WORLDS.map((world) => {
           const derivedProgress = getProgress(world.id);
@@ -47,20 +80,16 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ completedMissions, onSelectWorl
               onClick={() => onSelectWorld(world)}
               className="relative w-full aspect-[18/11] rounded-[2.5rem] overflow-hidden group transition-all duration-500 active:scale-95 shadow-2xl border border-white/5"
             >
-              {/* Tactical Background Layer */}
               <div className={`absolute inset-0 bg-gradient-to-br ${world.gradient} opacity-80 group-hover:opacity-100 transition-opacity duration-700`}></div>
               
-              {/* Mastered Overlay Glow */}
               {isMastered && (
                 <div className="absolute inset-0 bg-green-500/10 animate-pulse pointer-events-none"></div>
               )}
 
-              {/* HUD Elements */}
               <div className="absolute top-5 right-6 text-white/20 font-tactical text-[9px] tracking-[0.5em] uppercase pointer-events-none truncate max-w-[50%] text-right">
                 SECURED // {world.id.slice(0,3).toUpperCase()}
               </div>
 
-              {/* World Content */}
               <div className="relative h-full p-6 md:p-8 flex flex-col justify-between z-10 text-left">
                 <div className="flex justify-between items-start">
                   <div className="flex flex-col gap-1.5 min-w-0">
@@ -106,7 +135,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ completedMissions, onSelectWorl
                     </div>
                   </div>
 
-                  {/* Module Grid Preview - Responsive scaling */}
                   <div className="flex flex-wrap gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
                     {worldMissions.slice(0, 24).map((m, i) => (
                       <div 
@@ -122,12 +150,18 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ completedMissions, onSelectWorl
                 </div>
               </div>
 
-              {/* Hover Glow Effect */}
               <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-10 transition-opacity duration-300 pointer-events-none"></div>
             </button>
           );
         })}
       </div>
+
+      <style>{`
+        @keyframes ticker-scroll {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+      `}</style>
     </div>
   );
 };

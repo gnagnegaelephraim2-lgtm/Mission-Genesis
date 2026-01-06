@@ -22,7 +22,7 @@ export interface Chapter {
 
 export interface Mission {
   id: number;
-  worldId: string; // Direct link to parent subject
+  worldId: string; 
   title: string;
   story: string;
   difficulty: 'Medium' | 'Hard' | 'Expert';
@@ -48,6 +48,20 @@ export interface Player {
   xp: number;
   avatar: string;
   isUser?: boolean;
+  id?: string;
+  lastActive?: number;
+}
+
+export interface NeuralSignal {
+  id: string;
+  commander: string;
+  action: string;
+  timestamp: number;
+}
+
+export interface GlobalMesh {
+  commanders: Player[];
+  signals: NeuralSignal[];
 }
 
 export interface SkillProgress {
