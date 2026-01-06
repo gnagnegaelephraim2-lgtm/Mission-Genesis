@@ -22,6 +22,18 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ completedMissions, userXp
     setIsEditing(false);
   };
 
+  // Milestone mapping for badges
+  const achievements = [
+    { id: 1, label: 'Protocol Established', milestone: 1 },
+    { id: 2, label: 'Sector Secure', milestone: 5 },
+    { id: 3, label: 'Master Commander', milestone: 10 },
+    { id: 4, label: 'Neural Pioneer', milestone: 15 },
+    { id: 5, label: 'Elite Problem Solver', milestone: 25 },
+    { id: 6, label: 'System Architect', milestone: 40 },
+    { id: 7, label: 'Innovation Lead', milestone: 60 },
+    { id: 8, label: 'Genesis Legend', milestone: 100 },
+  ];
+
   return (
     <div className="flex flex-col">
       {/* Header Profile Section */}
@@ -94,10 +106,10 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ completedMissions, userXp
              </div>
              <div className="w-[1px] h-10 bg-slate-800/20 dark:bg-slate-800"></div>
              <div className="flex flex-col items-center">
-                <span className="text-[10px] font-tactical font-black text-slate-500 tracking-widest uppercase">RANK</span>
+                <span className="text-[10px] font-tactical font-black text-slate-500 tracking-widest uppercase">RANKING</span>
                 <div className="flex items-center gap-1 dark:text-white text-slate-900">
                    <BarChart3 size={16} className="text-amber-500" />
-                   <span className="text-xl font-tactical font-black">#5</span>
+                   <span className="text-xl font-tactical font-black">MESH</span>
                 </div>
              </div>
           </div>
@@ -112,32 +124,36 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ completedMissions, userXp
         </div>
 
         <div className="space-y-6">
-          {SKILLS.map((skill) => (
-            <div key={skill.skill} className="space-y-2">
-              <div className="flex justify-between items-end">
-                <div className="flex items-center gap-2">
-                   <span className="text-xl">{skill.icon}</span>
-                   <span className="text-sm font-tactical font-black dark:text-white text-slate-700 uppercase">{skill.skill}</span>
+          {SKILLS.map((skill) => {
+            // Dynamic progress based on missions (for demo purposes)
+            const dynamicProgress = Math.min(Math.floor((completedMissions.length / 100) * 100), 100);
+            return (
+              <div key={skill.skill} className="space-y-2">
+                <div className="flex justify-between items-end">
+                  <div className="flex items-center gap-2">
+                     <span className="text-xl">{skill.icon}</span>
+                     <span className="text-sm font-tactical font-black dark:text-white text-slate-700 uppercase">{skill.skill}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                     <span className={`text-[9px] font-tactical font-black px-2 py-0.5 rounded border ${
+                       dynamicProgress > 50 ? 'bg-amber-600/10 text-amber-600 border-amber-600/30' : 'bg-slate-300/10 text-slate-500 dark:text-slate-300 border-slate-300/30'
+                     }`}>
+                       {dynamicProgress > 80 ? 'Gold' : dynamicProgress > 40 ? 'Silver' : 'Bronze'}
+                     </span>
+                     <span className="text-xs font-tactical font-bold text-slate-400">{dynamicProgress}%</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1.5">
-                   <span className={`text-[9px] font-tactical font-black px-2 py-0.5 rounded border ${
-                     skill.badge === 'Silver' ? 'bg-slate-300/10 text-slate-500 dark:text-slate-300 border-slate-300/30' : 'bg-amber-600/10 text-amber-600 border-amber-600/30'
-                   }`}>
-                     {skill.badge} Badge
-                   </span>
-                   <span className="text-xs font-tactical font-bold text-slate-400">{skill.progress}%</span>
+                <div className="h-2 w-full bg-slate-100 dark:bg-slate-900 rounded-full overflow-hidden border border-slate-200 dark:border-slate-800">
+                  <div 
+                    className={`h-full transition-all duration-1000 ${
+                      dynamicProgress > 50 ? 'bg-amber-600' : 'bg-slate-400 dark:bg-slate-300'
+                    }`}
+                    style={{ width: `${dynamicProgress}%` }}
+                  ></div>
                 </div>
               </div>
-              <div className="h-2 w-full bg-slate-100 dark:bg-slate-900 rounded-full overflow-hidden border border-slate-200 dark:border-slate-800">
-                <div 
-                  className={`h-full transition-all duration-1000 ${
-                    skill.badge === 'Silver' ? 'bg-slate-400 dark:bg-slate-300' : 'bg-amber-600'
-                  }`}
-                  style={{ width: `${skill.progress}%` }}
-                ></div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Stats Grid */}
@@ -147,8 +163,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ completedMissions, userXp
               <div className="text-[9px] font-tactical font-black text-slate-500 tracking-widest uppercase mt-1">Missions Secured</div>
            </div>
            <div className="dark:bg-slate-900 bg-slate-50 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl text-center shadow-sm">
-              <div className="text-2xl font-tactical font-black dark:text-white text-slate-900">26</div>
-              <div className="text-[9px] font-tactical font-black text-slate-500 tracking-widest uppercase mt-1">Modules Online</div>
+              <div className="text-2xl font-tactical font-black dark:text-white text-slate-900">{userLevel}</div>
+              <div className="text-[9px] font-tactical font-black text-slate-500 tracking-widest uppercase mt-1">Tier Level</div>
            </div>
         </div>
 
@@ -159,18 +175,24 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ completedMissions, userXp
             <h3 className="text-xs font-tactical font-black text-amber-500 uppercase tracking-widest italic">Tactical Achievements</h3>
           </div>
           <div className="grid grid-cols-4 gap-4">
-             {[1, 2, 3].map((i) => (
-               <div key={i} className="aspect-square bg-gradient-to-tr from-amber-500 to-orange-600 rounded-xl p-0.5 shadow-lg group hover:scale-110 transition-transform">
-                  <div className="w-full h-full dark:bg-slate-900 bg-white rounded-[10px] flex items-center justify-center">
-                    <ShieldCheck size={24} className="text-amber-500" />
-                  </div>
-               </div>
-             ))}
-             {[4, 5, 6, 7, 8].map((i) => (
-               <div key={i} className="aspect-square dark:bg-slate-900 bg-slate-100 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-center opacity-30 grayscale">
-                  <ShieldCheck size={24} className="dark:text-slate-600 text-slate-300" />
-               </div>
-             ))}
+             {achievements.map((ach) => {
+               const isUnlocked = completedMissions.length >= ach.milestone;
+               return (
+                 <div 
+                   key={ach.id} 
+                   title={ach.label + (isUnlocked ? '' : ` (Locked: Complete ${ach.milestone} Missions)`)}
+                   className={`aspect-square rounded-xl p-0.5 transition-all duration-500 ${
+                     isUnlocked 
+                     ? 'bg-gradient-to-tr from-amber-500 to-orange-600 shadow-lg scale-100 hover:scale-110' 
+                     : 'dark:bg-slate-900 bg-slate-100 border border-slate-200 dark:border-slate-800 opacity-30 grayscale scale-95'
+                   }`}
+                 >
+                    <div className="w-full h-full dark:bg-slate-900 bg-white rounded-[10px] flex items-center justify-center">
+                      <ShieldCheck size={24} className={isUnlocked ? 'text-amber-500' : 'text-slate-600'} />
+                    </div>
+                 </div>
+               );
+             })}
           </div>
         </div>
       </div>

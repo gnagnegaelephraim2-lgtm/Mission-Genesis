@@ -27,9 +27,8 @@ import {
   Wifi
 } from 'lucide-react';
 
-// Shared Global Registry ID (Publicly accessible for sync)
-const GLOBAL_MESH_ID = '987c6543-210e-1234-5678-9abcdef01234'; 
-const SYNC_ENDPOINT = `https://jsonblob.com/api/jsonBlob/1344400262145327104`; // Pre-configured global node
+// Shared Global Registry (Publicly accessible for sync)
+const SYNC_ENDPOINT = `https://jsonblob.com/api/jsonBlob/1344400262145327104`;
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('home');
@@ -54,17 +53,17 @@ const App: React.FC = () => {
   });
 
   const userXp = useMemo(() => {
-    const base = 2450;
     const earned = completedMissions.reduce((total, id) => {
       const mission = MISSIONS.find(m => m.id === id);
       return total + (mission?.xp || 0);
     }, 0);
-    return base + earned;
+    return earned; // Base XP is 0
   }, [completedMissions]);
 
-  const userLevel = Math.floor(userXp / 1000) + 1;
+  // Level 0 at start: 0-999 XP = LVL 0
+  const userLevel = Math.floor(userXp / 1000);
 
-  // Sync Logic: Fetch Global Mesh
+  // Sync Logic: Global Neural Mesh Handshake
   const syncWithMesh = async (forcePush = false) => {
     if (!isLoggedIn) return;
     setIsSyncing(true);
@@ -73,8 +72,10 @@ const App: React.FC = () => {
       const data: GlobalMesh = await res.json();
       
       let updatedMesh = { ...data };
+      if (!updatedMesh.commanders) updatedMesh.commanders = [];
+      if (!updatedMesh.signals) updatedMesh.signals = [];
       
-      // Upsert User Profile in Global Mesh
+      // Update User in Global Mesh
       const userIndex = updatedMesh.commanders.findIndex(c => c.id === userProfile.id);
       const userEntry: Player = {
         rank: 0,
@@ -88,16 +89,19 @@ const App: React.FC = () => {
       if (userIndex === -1) {
         updatedMesh.commanders.push(userEntry);
       } else {
-        // Only update if current XP is higher or forced
-        if (userXp >= updatedMesh.commanders[userIndex].xp || forcePush) {
+        // Sync progress: local or remote higher XP wins
+        if (userXp > updatedMesh.commanders[userIndex].xp || forcePush) {
           updatedMesh.commanders[userIndex] = userEntry;
+        } else if (updatedMesh.commanders[userIndex].xp > userXp) {
+          // If remote XP is higher (e.g. from another session), we might want to update local state eventually
+          // For now, keep it simple.
         }
       }
 
-      // Cleanup old signals (keep last 10)
-      updatedMesh.signals = updatedMesh.signals.slice(-10);
+      // Cleanup signals (keep last 15)
+      updatedMesh.signals = updatedMesh.signals.slice(-15);
 
-      // Push back to Global Mesh
+      // Write back
       await fetch(SYNC_ENDPOINT, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -106,7 +110,7 @@ const App: React.FC = () => {
 
       setGlobalMesh(updatedMesh);
     } catch (e) {
-      console.warn("Uplink to Mesh Failed. Running in standalone mode.", e);
+      console.warn("Uplink Failed. Running standalone.", e);
     } finally {
       setIsSyncing(false);
     }
@@ -122,7 +126,7 @@ const App: React.FC = () => {
         action,
         timestamp: Date.now()
       };
-      data.signals = [...data.signals, signal].slice(-12);
+      data.signals = [...(data.signals || []), signal].slice(-15);
       await fetch(SYNC_ENDPOINT, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -132,14 +136,18 @@ const App: React.FC = () => {
     } catch (e) {}
   };
 
-  // Initial Sync and Polling
   useEffect(() => {
     if (isLoggedIn) {
       syncWithMesh();
-      const interval = setInterval(syncWithMesh, 60000); // Polling every minute
+      const interval = setInterval(syncWithMesh, 60000); 
       return () => clearInterval(interval);
     }
-  }, [isLoggedIn, userXp]); // Re-sync when XP changes
+  }, [isLoggedIn]);
+
+  // Sync on XP changes
+  useEffect(() => {
+    if (isLoggedIn) syncWithMesh();
+  }, [userXp]);
 
   useEffect(() => {
     if (theme === 'light') {
@@ -171,7 +179,6 @@ const App: React.FC = () => {
   const handleMissionComplete = (missionId: number, worldId: string) => {
     if (!completedMissions.includes(missionId)) {
       setCompletedMissions(prev => [...prev, missionId]);
-      const mission = MISSIONS.find(m => m.id === missionId);
       broadcastSignal(`secured Sector ${worldId.toUpperCase()} Node`);
     }
   };
@@ -227,7 +234,7 @@ const App: React.FC = () => {
             onSelectChapter={(chapter) => pushScreen('missions', { chapter })} 
           />;
         case 'missions':
-          return <MissionsScreen 
+          return < MissionsScreen 
             chapter={current.props.chapter} 
             completedMissions={completedMissions}
             onBack={popScreen} 

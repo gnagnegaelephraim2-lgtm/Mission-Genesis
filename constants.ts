@@ -3,8 +3,8 @@ import { World, Chapter, Mission, Opportunity, Player, SkillProgress } from './t
 
 export const WORLDS: World[] = [
   { id: 'computer-science', subject: 'CS', title: 'Neural Mesh', progress: 0, gradient: 'from-blue-600 to-indigo-950', icon: '💻', color: '#3b82f6' },
-  { id: 'physics', subject: 'PHYSICS', title: 'Kinetic Pulse', progress: 30, gradient: 'from-cyan-600 to-blue-900', icon: '⚡', color: '#06b6d4' },
-  { id: 'biology', subject: 'BIOLOGY', title: 'Bio-Sustain Grid', progress: 15, gradient: 'from-emerald-600 to-teal-900', icon: '🌿', color: '#10b981' },
+  { id: 'physics', subject: 'PHYSICS', title: 'Kinetic Pulse', progress: 0, gradient: 'from-cyan-600 to-blue-900', icon: '⚡', color: '#06b6d4' },
+  { id: 'biology', subject: 'BIOLOGY', title: 'Bio-Sustain Grid', progress: 0, gradient: 'from-emerald-600 to-teal-900', icon: '🌿', color: '#10b981' },
   { id: 'mathematics', subject: 'MATH', title: 'Prime Logic', progress: 0, gradient: 'from-purple-600 to-indigo-900', icon: '∞', color: '#a855f7' },
   { id: 'chemistry', subject: 'CHEMISTRY', title: 'Molecular Forge', progress: 0, gradient: 'from-amber-400 to-orange-700', icon: '🧪', color: '#f59e0b' },
   { id: 'agriculture', subject: 'AGRI', title: 'Verdant Sahel', progress: 0, gradient: 'from-lime-500 to-green-800', icon: '🌾', color: '#84cc16' },
@@ -35,12 +35,7 @@ const PHYSICS_STORIES = [
 ];
 
 export const MISSIONS: Mission[] = WORLDS.flatMap((world, wIdx) => {
-  let count = 12;
-  if (world.id === 'biology') count = 26; 
-  else if (world.id === 'mathematics') count = 54; 
-  else if (world.id === 'computer-science') count = 20;
-  else count = 32; 
-
+  let count = 20; 
   return Array.from({ length: count }).map((_, mIdx) => {
     const isPhysics = world.id === 'physics';
     return {
@@ -77,16 +72,10 @@ export const OPPORTUNITIES: Opportunity[] = [
   { id: 5, name: "African Science Academy", description: "Excellence in STEM education in Ghana", logo: "🌍", recommended: false, url: "https://www.africanscienceacademy.org/" }
 ];
 
-export const TOP_PLAYERS: Player[] = [
-  { rank: 1, username: "ChiemekaT", xp: 15420, avatar: "🦁" },
-  { rank: 2, username: "AmaniK", xp: 14850, avatar: "🐘" },
-  { rank: 3, username: "KoffiM", xp: 13900, avatar: "🐆" },
-  { rank: 4, username: "ZuriA", xp: 12750, avatar: "🦓" },
-  { rank: 5, username: "YouPlayer", xp: 11200, avatar: "🦅", isUser: true }
-];
+export const TOP_PLAYERS: Player[] = []; // Empty, will be populated by Global Mesh
 
 export const SKILLS: SkillProgress[] = [
-  { skill: "Problem Solver", progress: 62, badge: "Silver", icon: "🎯" },
-  { skill: "Systems Thinker", progress: 40, badge: "Bronze", icon: "👥" },
-  { skill: "Innovator", progress: 12, badge: "Bronze", icon: "💡" }
+  { skill: "Problem Solver", progress: 0, badge: "Bronze", icon: "🎯" },
+  { skill: "Systems Thinker", progress: 0, badge: "Bronze", icon: "👥" },
+  { skill: "Innovator", progress: 0, badge: "Bronze", icon: "💡" }
 ];
