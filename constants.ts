@@ -2,12 +2,12 @@
 import { World, Chapter, Mission, Opportunity, Player, SkillProgress } from './types';
 
 export const WORLDS: World[] = [
+  { id: 'computer-science', subject: 'CS', title: 'Neural Mesh', progress: 0, gradient: 'from-blue-600 to-indigo-950', icon: '💻', color: '#3b82f6' },
   { id: 'physics', subject: 'PHYSICS', title: 'Kinetic Pulse', progress: 30, gradient: 'from-cyan-600 to-blue-900', icon: '⚡', color: '#06b6d4' },
   { id: 'biology', subject: 'BIOLOGY', title: 'Bio-Sustain Grid', progress: 15, gradient: 'from-emerald-600 to-teal-900', icon: '🌿', color: '#10b981' },
   { id: 'mathematics', subject: 'MATH', title: 'Prime Logic', progress: 0, gradient: 'from-purple-600 to-indigo-900', icon: '∞', color: '#a855f7' },
   { id: 'chemistry', subject: 'CHEMISTRY', title: 'Molecular Forge', progress: 0, gradient: 'from-amber-400 to-orange-700', icon: '🧪', color: '#f59e0b' },
   { id: 'agriculture', subject: 'AGRI', title: 'Verdant Sahel', progress: 0, gradient: 'from-lime-500 to-green-800', icon: '🌾', color: '#84cc16' },
-  { id: 'computer-science', subject: 'CS', title: 'Neural Mesh', progress: 0, gradient: 'from-blue-600 to-indigo-950', icon: '💻', color: '#3b82f6' },
   { id: 'engineering', subject: 'ENG', title: "Titan's Forge", progress: 0, gradient: 'from-slate-600 to-slate-900', icon: '🏗️', color: '#64748b' },
   { id: 'env-science', subject: 'ENVIRON', title: "Gaia's Shield", progress: 0, gradient: 'from-teal-400 to-emerald-900', icon: '🌍', color: '#14b8a6' },
   { id: 'robotics', subject: 'ROBOTICS', title: 'Android Pulse', progress: 0, gradient: 'from-red-600 to-rose-950', icon: '🤖', color: '#e11d48' },
@@ -36,9 +36,10 @@ const PHYSICS_STORIES = [
 
 export const MISSIONS: Mission[] = WORLDS.flatMap((world, wIdx) => {
   let count = 12;
-  if (wIdx === 1) count = 26; // Biology
-  else if (wIdx === 2) count = 54; // Math
-  else if (wIdx % 2 === 0) count = 32; 
+  if (world.id === 'biology') count = 26; 
+  else if (world.id === 'mathematics') count = 54; 
+  else if (world.id === 'computer-science') count = 20;
+  else count = 32; 
 
   return Array.from({ length: count }).map((_, mIdx) => {
     const isPhysics = world.id === 'physics';

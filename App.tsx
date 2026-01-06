@@ -189,7 +189,6 @@ const App: React.FC = () => {
     <div className={`flex justify-center h-screen w-screen overflow-hidden ${theme === 'dark' ? 'bg-slate-950' : 'bg-slate-100'} transition-colors duration-500`}>
       <div className={`fixed inset-0 pointer-events-none opacity-10 bg-[url('https://www.transparenttextures.com/patterns/circuit-board.png')] ${theme === 'light' ? 'invert' : ''}`}></div>
       
-      {/* Container is fixed to viewport height (h-screen) to allow internal main area to scroll correctly */}
       <div className={`w-full max-w-screen-xl h-screen flex flex-col relative md:shadow-[0_0_100px_rgba(0,0,0,0.4)] overflow-hidden border-x ${theme === 'dark' ? 'bg-slate-950 border-slate-800/50' : 'bg-white border-slate-200'}`}>
         
         <header className={`px-4 md:px-10 pt-10 pb-4 flex items-center justify-between z-50 sticky top-0 transition-all shrink-0 ${theme === 'dark' ? 'bg-slate-950/80 backdrop-blur-md' : 'bg-white/80 backdrop-blur-md'}`}>
@@ -231,16 +230,16 @@ const App: React.FC = () => {
           ) : (
             <div className="flex w-full items-center justify-between">
                <div className="flex items-center gap-2">
-                 <div className="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center">
-                    <Lock size={16} className="text-slate-950" strokeWidth={3} />
+                 <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center shadow-lg">
+                    <Lock size={20} className="text-slate-950" strokeWidth={3} />
                  </div>
-                 <h1 className="font-tactical font-black text-amber-500 text-lg tracking-tighter uppercase hidden xs:block">GENESIS</h1>
+                 {/* Branding removed in unauthenticated header to focus on minimalist tactical UI from screenshot */}
                </div>
                
                <div className="flex items-center gap-4">
                  <button 
                    onClick={toggleTheme}
-                   className={`p-2.5 border rounded-xl transition-all ${theme === 'dark' ? 'bg-slate-800/50 border-slate-700 text-slate-400 hover:text-amber-500' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-100'}`}
+                   className={`p-2.5 border rounded-full transition-all ${theme === 'dark' ? 'bg-slate-800/50 border-slate-700 text-slate-400 hover:text-amber-500' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-100 shadow-md'}`}
                  >
                    {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
                  </button>
@@ -251,7 +250,7 @@ const App: React.FC = () => {
                      className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-tactical font-black text-[10px] sm:text-xs px-6 py-2.5 rounded-xl shadow-[0_10px_20px_rgba(245,158,11,0.3)] transition-all active:scale-95 flex items-center gap-2 group"
                    >
                      <UserPlus size={14} className="group-hover:scale-110 transition-transform" />
-                     LOGIN / SIGNUP
+                     ESTABLISH PROTOCOL
                    </button>
                  )}
                </div>
@@ -259,7 +258,6 @@ const App: React.FC = () => {
           )}
         </header>
 
-        {/* The internal area now has overflow-y-auto to allow scrolling within the fixed-height container */}
         <main className={`flex-1 overflow-y-auto custom-scrollbar relative`}>
           <div className={`${isLoggedIn ? 'pb-32' : 'pb-10'}`}>
             {renderScreen()}

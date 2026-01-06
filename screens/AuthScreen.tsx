@@ -108,7 +108,6 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
 
   return (
     <div className="min-h-full flex flex-col bg-slate-950 relative overflow-hidden p-6 sm:p-12 justify-center scanlines">
-      {/* Immersive Tactical Grid Background */}
       <div className="absolute inset-0 bg-[linear-gradient(rgba(245,158,11,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(245,158,11,0.06)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none opacity-40"></div>
       
       <div className="relative z-10 text-center mb-12 animate-in zoom-in-95 fade-in duration-1000">
@@ -123,7 +122,6 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
       </div>
 
       <div className="w-full max-w-[420px] mx-auto space-y-10 relative z-10 px-4">
-        {/* Tab Switcher - Styled like the screenshot */}
         <div className="bg-slate-900/50 border border-slate-800/80 p-1.5 rounded-full flex backdrop-blur-xl shadow-3xl">
           <button 
             onClick={() => { setIsLogin(true); setError(null); }}
@@ -139,7 +137,6 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
           </button>
         </div>
 
-        {/* Input Fields */}
         <div className="space-y-8">
           <div className="space-y-3 text-left group">
             <div className="flex justify-between items-center px-1">
@@ -177,12 +174,8 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
           </div>
         )}
 
-        {/* Main Action Button */}
         <button 
-          onClick={() => {
-             // Basic check to simulate required auth
-             startSocialAuth('Genesis');
-          }}
+          onClick={() => startSocialAuth('Genesis')}
           className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-tactical font-black text-2xl py-7 rounded-2xl shadow-[0_25px_60px_rgba(245,158,11,0.4)] active:scale-[0.98] transition-all group relative overflow-hidden flex items-center justify-center gap-4"
         >
           <div className="absolute inset-0 bg-white/20 -translate-x-full group-hover:translate-x-full transition-transform duration-700 skew-x-12"></div>
@@ -192,7 +185,6 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
           <ChevronRight size={32} strokeWidth={3} className="group-hover:translate-x-2 transition-transform" />
         </button>
 
-        {/* Social Sync Section - Screenshot matching design */}
         <div className="relative py-8">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-slate-800/60"></div>
@@ -204,8 +196,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
           </div>
         </div>
 
-        {/* Responsive Favicons Grid - High fidelity tactical styling */}
-        <div className="grid grid-cols-4 gap-4 sm:gap-6 pb-4">
+        <div className="grid grid-cols-4 gap-4 sm:gap-6 pb-2">
           {[
             { id: 'Gmail', icon: Mail, label: 'GML' },
             { id: 'Facebook', icon: Facebook, label: 'FBK' },
@@ -216,17 +207,12 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
               key={provider.id}
               onClick={() => startSocialAuth(provider.id as AuthProvider)} 
               className="relative aspect-square bg-slate-900/40 border border-slate-800/80 rounded-[2rem] flex flex-col items-center justify-center hover:border-amber-500 hover:bg-slate-800/80 transition-all group shadow-2xl active:scale-90 overflow-hidden"
-              title={`Secure login via ${provider.id}`}
             >
-              <div className="absolute top-3 right-3 w-2 h-2 bg-slate-800 rounded-full group-hover:bg-amber-500 transition-colors shadow-[0_0_10px_rgba(245,158,11,0.5)]"></div>
-              
-              <provider.icon size={36} className="text-slate-400 group-hover:text-white transition-all mb-2 group-hover:scale-110 drop-shadow-[0_0_15px_rgba(255,255,255,0.05)]" />
+              <div className="absolute top-3 right-3 w-1.5 h-1.5 bg-slate-800 rounded-full group-hover:bg-amber-500 transition-colors shadow-[0_0_10px_rgba(245,158,11,0.5)]"></div>
+              <provider.icon size={32} className="text-slate-400 group-hover:text-white transition-all mb-2 group-hover:scale-110" />
               <span className="text-[10px] font-tactical font-black text-slate-600 group-hover:text-amber-500 tracking-[0.1em] uppercase transition-colors">
                 {provider.label}
               </span>
-              
-              {/* Tactical Corners */}
-              <div className="absolute bottom-0 left-0 w-3 h-3 border-l-2 border-b-2 border-transparent group-hover:border-amber-500/40 transition-all rounded-bl-[2rem]"></div>
             </button>
           ))}
         </div>
@@ -235,7 +221,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
       <div className="mt-auto pt-16 flex flex-col items-center gap-4">
          <div className="flex items-center gap-3 opacity-30">
             <ShieldCheck size={16} className="text-slate-500" />
-            <span className="text-[9px] font-tactical font-bold text-slate-500 tracking-[0.3em] uppercase italic">END-TO-END QUANTUM ENCRYPTION ACTIVE</span>
+            <span className="text-[9px] font-tactical font-bold text-slate-500 tracking-[0.3em] uppercase italic">SECURE GATEWAY ENCRYPTED</span>
          </div>
          <p className="text-center text-slate-800 text-[10px] sm:text-xs font-tactical font-bold leading-relaxed tracking-[0.5em] uppercase italic opacity-40">
            GENESIS OPERATIONAL DIRECTIVE // NO AUTHENTICATION NO ACCESS
