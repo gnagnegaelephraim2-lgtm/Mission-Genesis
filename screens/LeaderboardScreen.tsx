@@ -1,7 +1,7 @@
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Player } from '../types';
-import { Trophy, Zap, Medal, RefreshCw, Loader2, Radio, Info, Activity, UserPlus } from 'lucide-react';
+import { Trophy, Zap, Medal, RefreshCw, Loader2, Radio, Info, Activity, UserPlus, Users } from 'lucide-react';
 
 interface LeaderboardScreenProps {
   userXp: number;
@@ -12,6 +12,22 @@ interface LeaderboardScreenProps {
   onShareInvite?: () => void;
 }
 
+// Helper to generate large diverse user set
+const generateSimulatedUsers = (count: number): Player[] => {
+  const avatars = ['🦅', '🦁', '🐆', '🐘', '🦍', '🦓', '🦒', '🦏', '🐍', '🦎', '🐃', '🐾'];
+  const prefixes = ['Node', 'Cipher', 'Alpha', 'Delta', 'Command', 'Grid', 'Nexus', 'Ghost', 'Zenith', 'Vector'];
+  const suffixes = ['_X', 'Prime', 'Ops', 'Core', 'Mesh', '01', 'Tactical', 'Sync', 'Uplink', 'Void'];
+  
+  return Array.from({ length: count }).map((_, i) => ({
+    rank: 0,
+    username: `${prefixes[i % prefixes.length]}${suffixes[(i * 3) % suffixes.length]}_${100 + i}`,
+    xp: Math.max(500, Math.floor(15000 * Math.pow(0.95, i))), // Exponential decay for realistic curve
+    avatar: avatars[i % avatars.length],
+    id: `sim-${i}`,
+    lastActive: Date.now() - (Math.random() * 3600000)
+  }));
+};
+
 const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ 
   userXp, 
   userProfile, 
@@ -20,27 +36,53 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({
   onRefresh,
   onShareInvite
 }) => {
-  const dynamicPlayers = useMemo(() => {
-    const shadows: Player[] = [
-      { rank: 0, username: 'Elite_Aria', xp: 12450, avatar: '🐆', id: 'shadow-1' },
-      { rank: 0, username: 'Node_X', xp: 9800, avatar: '🐘', id: 'shadow-2' },
-      { rank: 0, username: 'Cipher_01', xp: 7250, avatar: '🦁', id: 'shadow-3' }
-    ];
+  const [sessionStartTime] = useState(Date.now());
+  const [currentTime, setCurrentTime] = useState(Date.now());
 
-    let pool = [...meshCommanders];
+  // Update clock for the 2-minute join simulation
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(Date.now()), 10000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const dynamicPlayers = useMemo(() => {
+    // Generate base simulated pool
+    const simulatedPool = generateSimulatedUsers(100);
+    
+    // Simulate new users joining every 2 mins since session start
+    const minutesElapsed = Math.floor((currentTime - sessionStartTime) / (2 * 60 * 1000));
+    const newRecruits: Player[] = Array.from({ length: minutesElapsed }).map((_, i) => ({
+      rank: 0,
+      username: `Recruit_${i + 1}`,
+      xp: 0,
+      avatar: '🐣',
+      id: `recruit-${i}`,
+      lastActive: Date.now()
+    }));
+
+    let pool = [...meshCommanders, ...simulatedPool, ...newRecruits];
     const uniquePoolMap = new Map<string, Player>();
     pool.forEach(p => { if (p.id) uniquePoolMap.set(p.id, p); });
 
+    // Ensure current user is in
     uniquePoolMap.set(userProfile.id || 'current-user', {
-      rank: 0, username: userProfile.username, xp: userXp, avatar: userProfile.avatar, isUser: true, id: userProfile.id || 'current-user', lastActive: Date.now()
+      rank: 0, 
+      username: userProfile.username, 
+      xp: userXp, 
+      avatar: userProfile.avatar, 
+      isUser: true, 
+      id: userProfile.id || 'current-user', 
+      lastActive: Date.now()
     });
 
-    shadows.forEach(s => { if (!uniquePoolMap.has(s.id!)) uniquePoolMap.set(s.id!, s); });
-    return Array.from(uniquePoolMap.values()).sort((a, b) => b.xp - a.xp).map((p, i) => ({ ...p, rank: i + 1 }));
-  }, [userXp, userProfile, meshCommanders]);
+    return Array.from(uniquePoolMap.values())
+      .sort((a, b) => b.xp - a.xp)
+      .map((p, i) => ({ ...p, rank: i + 1 }));
+  }, [userXp, userProfile, meshCommanders, currentTime, sessionStartTime]);
 
   const currentUser = dynamicPlayers.find(p => p.isUser);
   const userRank = currentUser?.rank || '-';
+  const totalUsers = dynamicPlayers.length;
 
   return (
     <div className="p-4 sm:p-6 md:p-10 relative">
@@ -56,7 +98,7 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({
              </div>
           </div>
           <p className="text-slate-500 text-xs font-tactical font-bold uppercase tracking-[0.2em] mt-2 italic">
-            Global Standing: <span className="text-white font-black italic">Sector Rank #{userRank}</span>
+            Global Standing: <span className="text-white font-black italic">Rank #{userRank} of {totalUsers}</span>
           </p>
         </div>
         
@@ -71,16 +113,30 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({
         </div>
       </div>
 
-      <div className="space-y-4 pb-24 relative">
+      {/* Recruits Ticker */}
+      <div className="mb-8 p-4 bg-slate-900/40 border border-slate-800 rounded-2xl flex items-center gap-4 overflow-hidden shadow-inner">
+         <div className="flex items-center gap-2 shrink-0 border-r border-slate-800 pr-4">
+            <Users size={16} className="text-amber-500" />
+            <span className="text-[9px] font-tactical font-black text-amber-500 uppercase tracking-widest">Recruit Log</span>
+         </div>
+         <div className="flex gap-10 animate-[ticker-scroll_30s_linear_infinite] whitespace-nowrap">
+            {dynamicPlayers.slice(-10).reverse().map((p, i) => (
+              <span key={i} className="text-[10px] font-mono text-slate-400">
+                &gt; <span className="text-white font-black">{p.username}</span> ESTABLISHED UPLINK: <span className="text-emerald-500">LVL 0 [0 XP]</span>
+              </span>
+            ))}
+         </div>
+      </div>
+
+      <div className="space-y-4 pb-24 relative max-h-[70vh] overflow-y-auto custom-scrollbar pr-2">
         {dynamicPlayers.map((player) => {
-          const isShadow = player.id?.startsWith('shadow');
-          const isLive = player.lastActive && (Date.now() - player.lastActive < 600000);
+          const isLive = player.lastActive && (Date.now() - (player.lastActive as number) < 600000);
           return (
             <div 
               key={player.id || player.username} 
               className={`flex items-center p-5 rounded-[2rem] border transition-all duration-500 group ${
                 player.isUser 
-                ? 'bg-amber-500/10 border-amber-500 shadow-xl scale-[1.02] z-10' 
+                ? 'bg-amber-500/10 border-amber-500 shadow-xl scale-[1.01] z-10' 
                 : 'bg-slate-900/60 border-slate-800 hover:border-slate-700 shadow-md'
               }`}
             >
@@ -98,7 +154,7 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({
                 <div className={`w-14 h-14 rounded-full flex items-center justify-center text-3xl border-2 transition-all ${player.isUser ? 'bg-slate-950 border-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.4)]' : 'bg-slate-900 border-slate-800 group-hover:border-slate-500'}`}>
                   {player.avatar}
                 </div>
-                {isLive && !isShadow && (
+                {isLive && (
                   <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-slate-950 shadow-[0_0_10px_rgba(16,185,129,0.8)] animate-pulse"></div>
                 )}
               </div>
@@ -106,15 +162,15 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className={`font-tactical font-black text-base uppercase truncate ${player.isUser ? 'text-amber-500' : 'text-white'}`}>{player.username}</h3>
                   {player.isUser && <span className="text-[8px] px-2 py-0.5 bg-amber-500 text-slate-950 rounded-lg font-black uppercase tracking-tighter">ME</span>}
-                  {isShadow && <span className="text-[8px] px-2 py-0.5 border border-slate-700 text-slate-500 rounded-lg font-black uppercase tracking-tighter opacity-50">ELITE CORE</span>}
+                  {player.xp === 0 && <span className="text-[8px] px-2 py-0.5 border border-emerald-500/40 text-emerald-500 rounded-lg font-black uppercase tracking-tighter animate-pulse">JUST JOINED</span>}
                 </div>
                 <div className="flex items-center gap-2 mt-1">
                   <Zap size={12} className="text-amber-500 fill-amber-500" />
                   <span className={`text-[10px] font-bold ${player.isUser ? 'text-amber-600' : 'text-slate-400'} tracking-widest uppercase`}>{player.xp.toLocaleString()} XP ACHIEVED</span>
                 </div>
               </div>
-              <div className="hidden xs:block px-4 py-2 rounded-xl bg-slate-950 border border-slate-800 text-[9px] font-tactical font-black text-slate-500 tracking-widest uppercase shadow-inner">
-                {player.rank === 1 ? 'SUPREME' : player.rank <= 5 ? 'COMMAND' : 'TACTICAL'}
+              <div className="hidden xs:block px-4 py-2 rounded-xl bg-slate-950 border border-slate-800 text-[9px] font-tactical font-black text-amber-500 tracking-widest uppercase shadow-inner">
+                DYNAMIC
               </div>
             </div>
           );
@@ -124,7 +180,7 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({
       <div className="mt-10 p-6 border border-slate-800 rounded-[2rem] flex flex-col items-center gap-4 text-center bg-slate-900/40 shadow-sm">
          <Info size={24} className="text-slate-500" />
          <p className="text-[10px] font-tactical font-bold text-slate-500 uppercase tracking-widest leading-relaxed max-w-sm">
-           Share your <span className="text-amber-600 underline">Neural Link</span> to bring your squad into the mesh. Compete real-time across global sectors.
+           The <span className="text-amber-600 underline">Dynamic Grid</span> updates real-time. New commanders joining the mesh every 2 minutes. Stay active to secure your position.
          </p>
       </div>
     </div>

@@ -23,7 +23,8 @@ import {
   CheckCircle2,
   Cpu,
   Volume2,
-  VolumeX
+  VolumeX,
+  Music4
 } from 'lucide-react';
 
 const SYNC_ENDPOINT = `https://jsonblob.com/api/jsonBlob/1344400262145327104`;
@@ -39,8 +40,8 @@ const App: React.FC = () => {
   const [isAudioActive, setIsAudioActive] = useState(false);
   
   const audioContextRef = useRef<AudioContext | null>(null);
-  const ambientNodesRef = useRef<any[]>([]);
-  const audioIntervalRef = useRef<number | null>(null);
+  const sequencerIntervalRef = useRef<number | null>(null);
+  const activeNodesRef = useRef<AudioNode[]>([]);
 
   const [userProfile, setUserProfile] = useState(() => {
     const saved = localStorage.getItem('mission_genesis_profile');
@@ -56,78 +57,100 @@ const App: React.FC = () => {
   });
 
   const stopAudio = useCallback(() => {
-    ambientNodesRef.current.forEach(node => {
-      try { node.stop(); } catch (e) {}
-    });
-    ambientNodesRef.current = [];
-    if (audioIntervalRef.current) {
-      clearInterval(audioIntervalRef.current);
-      audioIntervalRef.current = null;
+    if (sequencerIntervalRef.current) {
+      clearInterval(sequencerIntervalRef.current);
+      sequencerIntervalRef.current = null;
     }
-  }, []);
-
-  const createNeuralPatch = useCallback(() => {
-    if (!audioContextRef.current) return;
-    const ctx = audioContextRef.current;
-    if (ctx.state === 'suspended') ctx.resume();
-
-    // Clear existing nodes
-    ambientNodesRef.current.forEach(node => {
-      try { node.stop(); } catch (e) {}
+    activeNodesRef.current.forEach(node => {
+      try { (node as any).stop(); } catch (e) {}
     });
-    ambientNodesRef.current = [];
-
-    const createDrone = (freq: number, type: OscillatorType, volume: number) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      const lfo = ctx.createOscillator();
-      const lfoGain = ctx.createGain();
-
-      osc.type = type;
-      osc.frequency.setValueAtTime(freq, ctx.currentTime);
-      
-      lfo.frequency.setValueAtTime(0.1, ctx.currentTime);
-      lfoGain.gain.setValueAtTime(freq * 0.05, ctx.currentTime);
-      lfo.connect(lfoGain);
-      lfoGain.connect(osc.frequency);
-
-      gain.gain.setValueAtTime(0, ctx.currentTime);
-      gain.gain.linearRampToValueAtTime(volume, ctx.currentTime + 3);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      
-      osc.start();
-      lfo.start();
-      return osc;
-    };
-
-    // Randomize slightly for "Cyberpunk Instrumental" variety
-    const baseFreq = [55, 65, 41][Math.floor(Math.random() * 3)];
-    const types: OscillatorType[] = ['sine', 'triangle', 'sawtooth'];
-    const selectedType = types[Math.floor(Math.random() * types.length)];
-
-    ambientNodesRef.current = [
-      createDrone(baseFreq, selectedType, 0.04),
-      createDrone(baseFreq * 2, 'sine', 0.02),
-      createDrone(baseFreq * 1.5, 'triangle', 0.01)
-    ];
+    activeNodesRef.current = [];
   }, []);
 
-  const toggleAudio = () => {
+  const startPunkInstrumental = useCallback(() => {
     if (!audioContextRef.current) {
       audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
     }
+    const ctx = audioContextRef.current;
+    if (ctx.state === 'suspended') ctx.resume();
 
+    const bpm = 165;
+    const secondsPerBeat = 60 / bpm;
+    const subdivision = secondsPerBeat / 2; // 8th notes
+    let currentStep = 0;
+
+    const bassScale = [41.20, 41.20, 48.99, 55.00, 36.71, 36.71, 43.65, 48.99]; // E1, B1, A1, D1 roughly
+    const pattern = [1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0];
+
+    const playBassNote = (time: number, freq: number) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(freq, time);
+
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(200, time);
+      filter.frequency.exponentialRampToValueAtTime(1000, time + 0.1);
+
+      gain.gain.setValueAtTime(0, time);
+      gain.gain.linearRampToValueAtTime(0.1, time + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + subdivision * 0.9);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(time);
+      osc.stop(time + subdivision);
+      activeNodesRef.current.push(osc);
+    };
+
+    const playSnareHiss = (time: number) => {
+      const bufferSize = ctx.sampleRate * 0.1;
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+
+      filter.type = 'highpass';
+      filter.frequency.setValueAtTime(1000, time);
+
+      gain.gain.setValueAtTime(0.05, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
+
+      source.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+      source.start(time);
+      activeNodesRef.current.push(source);
+    };
+
+    sequencerIntervalRef.current = window.setInterval(() => {
+      const startTime = ctx.currentTime + 0.1;
+      if (pattern[currentStep % pattern.length]) {
+        playBassNote(startTime, bassScale[Math.floor(currentStep / 4) % bassScale.length]);
+      }
+      if (currentStep % 2 === 0) {
+        playSnareHiss(startTime);
+      }
+      currentStep++;
+    }, subdivision * 1000);
+  }, []);
+
+  const toggleAudio = () => {
     if (isAudioActive) {
       stopAudio();
       setIsAudioActive(false);
     } else {
-      createNeuralPatch();
+      startPunkInstrumental();
       setIsAudioActive(true);
-      // Change the song (cyberpunk patch) every 3 mins
-      audioIntervalRef.current = window.setInterval(() => {
-        createNeuralPatch();
-      }, 180000);
+      notify("PUNK PROTOCOL ENGAGED", "info");
     }
   };
 
@@ -228,7 +251,7 @@ const App: React.FC = () => {
   };
 
   const handleLogout = () => {
-    if (isAudioActive) toggleAudio();
+    if (isAudioActive) stopAudio();
     setIsLoggedIn(false);
     localStorage.removeItem('mission_genesis_logged_in');
     setNavigationStack([]);
@@ -284,10 +307,11 @@ const App: React.FC = () => {
               <div className="flex items-center gap-3">
                 <button 
                   onClick={toggleAudio}
-                  className={`p-2.5 border rounded-xl transition-all shadow-lg active:scale-95 ${isAudioActive ? 'bg-amber-500 text-slate-950 border-amber-600' : 'bg-slate-900/60 border-slate-700 text-slate-500'}`}
-                  title="Neural Harmonics"
+                  className={`p-2.5 border rounded-xl transition-all shadow-lg active:scale-95 flex items-center gap-2 ${isAudioActive ? 'bg-amber-500 text-slate-950 border-amber-600' : 'bg-slate-900/60 border-slate-700 text-slate-500'}`}
+                  title="Punk Uplink Instrumental"
                 >
-                  {isAudioActive ? <Volume2 size={20} className="animate-pulse" /> : <VolumeX size={20} />}
+                  {isAudioActive ? <Music4 size={20} className="animate-spin" /> : <VolumeX size={20} />}
+                  <span className="hidden sm:inline text-[9px] font-tactical font-black uppercase tracking-widest">{isAudioActive ? 'PUNK ON' : 'PUNK OFF'}</span>
                 </button>
                 <button 
                   onClick={shareNeuralLink}

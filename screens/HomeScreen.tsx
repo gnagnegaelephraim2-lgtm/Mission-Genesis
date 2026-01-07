@@ -2,7 +2,7 @@
 import React, { useMemo } from 'react';
 import { WORLDS, MISSIONS } from '../constants';
 import { World, NeuralSignal } from '../types';
-import { Radio, Activity, Loader2, Zap, ArrowUpRight } from 'lucide-react';
+import { Radio, Activity, Loader2, Zap, ArrowUpRight, Music } from 'lucide-react';
 
 interface HomeScreenProps {
   completedMissions: number[];
@@ -27,9 +27,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ completedMissions, signals = []
     const fallbacks: NeuralSignal[] = [
       { id: 'st1', commander: 'Genesis HQ', action: 'Analyzing sector data nodes...', timestamp: Date.now() },
       { id: 'st2', commander: 'Global Grid', action: 'Optimizing regional sub-links...', timestamp: Date.now() },
-      { id: 'st3', commander: 'Echo Node', action: 'New opportunities identified at ALU and UCT.', timestamp: Date.now() },
+      { id: 'st3', commander: 'Punk Core', action: 'Punk harmonics calibrated at 165 BPM.', timestamp: Date.now() },
       { id: 'st4', commander: 'System', action: 'Operational readiness maintained at Level 4.', timestamp: Date.now() },
-      { id: 'st5', commander: 'Satellite-09', action: 'Weather patterns over Sahel normalized.', timestamp: Date.now() }
+      { id: 'st5', commander: 'Satellite-09', action: 'Tactical playlist updated to Instrumental Punk.', timestamp: Date.now() }
     ];
     return [...signals, ...fallbacks].sort((a, b) => b.timestamp - a.timestamp).slice(0, 10);
   }, [signals]);
@@ -48,7 +48,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ completedMissions, signals = []
          <div className="flex gap-20 animate-[ticker-scroll_60s_linear_infinite] whitespace-nowrap pl-[160px] md:pl-[240px]">
             {displaySignals.concat(displaySignals).map((sig, idx) => (
               <div key={`${sig.id}-${idx}`} className="flex items-center gap-4 font-mono text-[11px] uppercase text-slate-400 group-hover:text-slate-200 transition-colors">
-                 <Zap size={10} className="text-emerald-500 animate-pulse" />
+                 {sig.commander === 'Punk Core' ? <Music size={10} className="text-amber-500 animate-spin" /> : <Zap size={10} className="text-emerald-500 animate-pulse" />}
                  <span className="text-white font-black">{sig.commander}</span>
                  <span className="opacity-60">{sig.action}</span>
                  <span className="text-[9px] text-slate-600 font-bold">[{new Date(sig.timestamp).toLocaleTimeString()}]</span>
@@ -77,10 +77,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ completedMissions, signals = []
             <button
               key={world.id}
               onClick={() => onSelectWorld(world)}
-              className={`relative w-full aspect-[18/12] rounded-[3.5rem] overflow-hidden group transition-all duration-700 active:scale-95 shadow-[0_30px_60px_rgba(0,0,0,0.5)] border border-white/5 animate-in slide-up world-card-float`}
+              className={`relative w-full aspect-[18/12] rounded-[3.5rem] overflow-hidden group transition-all duration-700 active:scale-95 shadow-[0_30px_60px_rgba(0,0,0,0.5)] border border-white/5 animate-in slide-up world-card-float hover:shadow-[0_0_40px_rgba(255,255,255,0.1)]`}
               style={{ 
                 animationDelay: `${idx * 150}ms`,
-                '--float-offset': `${idx % 2 === 0 ? '-10px' : '10px'}`
+                '--float-offset': `${idx % 2 === 0 ? '-18px' : '18px'}`
               } as React.CSSProperties}
             >
               <div className={`absolute inset-0 bg-gradient-to-br ${world.gradient} opacity-80 group-hover:opacity-100 transition-opacity duration-1000`}></div>
@@ -98,7 +98,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ completedMissions, signals = []
                       </span>
                     </div>
                   </div>
-                  <div className={`text-6xl md:text-7xl filter drop-shadow-[0_0_40px_rgba(255,255,255,0.4)] transition-all duration-700 ease-out shrink-0 ml-4 ${isMastered ? 'scale-110 rotate-12 animate-bounce' : 'group-hover:scale-125 group-hover:-rotate-6 animate-pulse'}`}>
+                  <div className={`text-6xl md:text-7xl filter drop-shadow-[0_0_40px_rgba(255,255,255,0.4)] transition-all duration-700 ease-out shrink-0 ml-4 ${isMastered ? 'scale-110 rotate-12 animate-bounce' : 'group-hover:scale-125 group-hover:-rotate-6 animate-pulse-glow'}`}>
                     {isMastered ? '🏆' : world.icon}
                   </div>
                 </div>
@@ -161,10 +161,19 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ completedMissions, signals = []
           50% { transform: translateY(var(--float-offset, -10px)); }
         }
         .world-card-float {
-          animation: float 6s ease-in-out infinite;
+          animation: float 4s ease-in-out infinite;
         }
         .world-card-float:hover {
           animation-play-state: paused;
+          transform: scale(1.05) translateY(-18px);
+          transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes pulse-glow {
+          0%, 100% { filter: drop-shadow(0 0 15px rgba(255,255,255,0.2)); }
+          50% { filter: drop-shadow(0 0 45px rgba(255,255,255,0.6)); transform: scale(1.1) rotate(5deg); }
+        }
+        .animate-pulse-glow {
+          animation: pulse-glow 2s infinite ease-in-out;
         }
       `}</style>
     </div>
