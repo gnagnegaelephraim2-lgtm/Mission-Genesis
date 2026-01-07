@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { WORLDS, MISSIONS } from '../constants';
 import { World, NeuralSignal } from '../types';
@@ -27,9 +26,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ completedMissions, signals = []
     const fallbacks: NeuralSignal[] = [
       { id: 'st1', commander: 'Genesis HQ', action: 'Analyzing sector data nodes...', timestamp: Date.now() },
       { id: 'st2', commander: 'Global Grid', action: 'Optimizing regional sub-links...', timestamp: Date.now() },
-      { id: 'st3', commander: 'Punk Core', action: 'Punk harmonics calibrated at 165 BPM.', timestamp: Date.now() },
+      { id: 'st3', commander: 'Beat Core', action: 'Rap harmonics calibrated at 92 BPM.', timestamp: Date.now() },
       { id: 'st4', commander: 'System', action: 'Operational readiness maintained at Level 4.', timestamp: Date.now() },
-      { id: 'st5', commander: 'Satellite-09', action: 'Tactical playlist updated to Instrumental Punk.', timestamp: Date.now() }
+      { id: 'st5', commander: 'Satellite-09', action: 'Tactical playlist updated to Rap Instrumentals.', timestamp: Date.now() }
     ];
     return [...signals, ...fallbacks].sort((a, b) => b.timestamp - a.timestamp).slice(0, 10);
   }, [signals]);
@@ -48,7 +47,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ completedMissions, signals = []
          <div className="flex gap-20 animate-[ticker-scroll_60s_linear_infinite] whitespace-nowrap pl-[160px] md:pl-[240px]">
             {displaySignals.concat(displaySignals).map((sig, idx) => (
               <div key={`${sig.id}-${idx}`} className="flex items-center gap-4 font-mono text-[11px] uppercase text-slate-400 group-hover:text-slate-200 transition-colors">
-                 {sig.commander === 'Punk Core' ? <Music size={10} className="text-amber-500 animate-spin" /> : <Zap size={10} className="text-emerald-500 animate-pulse" />}
+                 {sig.commander === 'Beat Core' ? <Music size={10} className="text-amber-500 animate-spin" /> : <Zap size={10} className="text-emerald-500 animate-pulse" />}
                  <span className="text-white font-black">{sig.commander}</span>
                  <span className="opacity-60">{sig.action}</span>
                  <span className="text-[9px] text-slate-600 font-bold">[{new Date(sig.timestamp).toLocaleTimeString()}]</span>

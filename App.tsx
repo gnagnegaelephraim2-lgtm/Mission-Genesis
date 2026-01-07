@@ -26,7 +26,8 @@ import {
   VolumeX,
   Music4,
   Users,
-  Volume2
+  Volume2,
+  Headphones
 } from 'lucide-react';
 
 const SYNC_ENDPOINT = `https://jsonblob.com/api/jsonBlob/1344400262145327104`;
@@ -70,7 +71,7 @@ const App: React.FC = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [notification, setNotification] = useState<{message: string, type: 'info' | 'success'} | null>(null);
   const [isAudioActive, setIsAudioActive] = useState(false);
-  const [trackId, setTrackId] = useState(1); // Start from 1
+  const [trackId, setTrackId] = useState(1); 
   
   const audioContextRef = useRef<AudioContext | null>(null);
   const sequencerIntervalRef = useRef<number | null>(null);
@@ -78,7 +79,6 @@ const App: React.FC = () => {
   const activeNodesRef = useRef<AudioNode[]>([]);
   const welcomePlayedRef = useRef(false);
 
-  // Formatting for up to 1000 tracks: 0001, 0010, 0100, 1000
   const formatTrackNum = (num: number) => {
     if (num < 10) return `000${num}`;
     if (num < 100) return `00${num}`;
@@ -135,12 +135,10 @@ const App: React.FC = () => {
     const handleGlobalClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       const clickable = target.closest('button') || target.closest('a') || target.getAttribute('role') === 'button';
-      
       if (clickable) {
         playInteractionSFX(600, 'sine', 0.08, 0.03);
       }
     };
-
     window.addEventListener('click', handleGlobalClick);
     return () => window.removeEventListener('click', handleGlobalClick);
   }, [playInteractionSFX]);
@@ -188,7 +186,7 @@ const App: React.FC = () => {
     }
   }, [getAudioContext]);
 
-  const startProceduralPunk = useCallback((seed: number) => {
+  const startProceduralRap = useCallback((seed: number) => {
     const ctx = getAudioContext();
     if (ctx.state === 'suspended') ctx.resume();
 
@@ -196,84 +194,112 @@ const App: React.FC = () => {
     activeNodesRef.current = [];
     if (sequencerIntervalRef.current) clearInterval(sequencerIntervalRef.current);
 
-    const bpm = 160 + (seed % 40); 
+    const bpm = 92 + (seed % 10); // Standard chill rap BPM
     const secondsPerBeat = 60 / bpm;
-    const subdivision = secondsPerBeat / 2;
+    const subdivision = secondsPerBeat / 4; // 16th notes
     let currentStep = 0;
 
+    // Harmonic Minor / Phrygian for dark rap vibes
     const scales = [
-      [41.20, 48.99, 55.00, 36.71], 
-      [43.65, 51.91, 58.27, 38.89], 
-      [36.71, 43.65, 48.99, 32.70], 
+      [32.70, 34.65, 38.89, 43.65], // C Phrygian Low
+      [36.71, 38.89, 43.65, 48.99], // D Phrygian Low
+      [41.20, 43.65, 48.99, 55.00], // E Phrygian Low
     ];
     const bassScale = scales[seed % scales.length];
     
-    const patternLength = 16;
-    const riff = Array.from({ length: patternLength }, (_, i) => 
-      ((seed + i) * 17) % 31 > 12 ? 1 : 0
-    );
-
-    const playDrumHit = (time: number, freq: number, type: 'kick' | 'snare') => {
+    const playKick = (time: number) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = type === 'kick' ? 'sine' : 'triangle';
-      osc.frequency.setValueAtTime(freq, time);
-      osc.frequency.exponentialRampToValueAtTime(1, time + 0.1);
-      gain.gain.setValueAtTime(0.2, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.1);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(150, time);
+      osc.frequency.exponentialRampToValueAtTime(40, time + 0.15);
+      gain.gain.setValueAtTime(0.3, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.2);
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start(time);
-      osc.stop(time + 0.1);
+      osc.stop(time + 0.2);
     };
 
-    const playPunkBass = (time: number, freq: number) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
+    const playSnare = (time: number) => {
+      const noise = ctx.createBufferSource();
+      const bufferSize = ctx.sampleRate * 0.1;
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+      noise.buffer = buffer;
+
       const filter = ctx.createBiquadFilter();
+      filter.type = 'highpass';
+      filter.frequency.setValueAtTime(1200, time);
       
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(freq, time);
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.15, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.15);
       
-      filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(2200, time);
-      filter.frequency.exponentialRampToValueAtTime(300, time + subdivision);
-      
-      gain.gain.setValueAtTime(0, time);
-      gain.gain.linearRampToValueAtTime(0.12, time + 0.01); 
-      gain.gain.exponentialRampToValueAtTime(0.001, time + subdivision * 0.9);
-      
-      osc.connect(filter);
+      noise.connect(filter);
       filter.connect(gain);
       gain.connect(ctx.destination);
+      noise.start(time);
+      noise.stop(time + 0.15);
+    };
+
+    const playHiHat = (time: number, accent = false) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(10000, time);
+      gain.gain.setValueAtTime(accent ? 0.04 : 0.02, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
       osc.start(time);
-      osc.stop(time + subdivision);
+      osc.stop(time + 0.05);
+    };
+
+    const playSubBass = (time: number, freq: number) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, time);
+      gain.gain.setValueAtTime(0, time);
+      gain.gain.linearRampToValueAtTime(0.15, time + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + secondsPerBeat * 0.8);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(time);
+      osc.stop(time + secondsPerBeat);
       activeNodesRef.current.push(osc);
     };
 
     sequencerIntervalRef.current = window.setInterval(() => {
       const startTime = ctx.currentTime + 0.05;
-      if (riff[currentStep % riff.length]) {
-        playPunkBass(startTime, bassScale[currentStep % bassScale.length]);
+      
+      // Drum Pattern (Boom Bap / Trap hybrid)
+      if (currentStep % 16 === 0 || currentStep % 16 === 10) playKick(startTime);
+      if (currentStep % 16 === 8) playSnare(startTime);
+      if (currentStep % 2 === 0) playHiHat(startTime, currentStep % 4 === 0);
+
+      // Bassline logic
+      if (currentStep % 8 === 0) {
+        const note = bassScale[Math.floor((seed + currentStep) % 4)];
+        playSubBass(startTime, note);
       }
-      if (currentStep % 4 === 0) playDrumHit(startTime, 60, 'kick');
-      if (currentStep % 4 === 2) playDrumHit(startTime, 120, 'snare');
       
       currentStep++;
     }, subdivision * 1000);
   }, [getAudioContext]);
 
   const cycleTrack = useCallback(() => {
-    // Correct Track Rotation Logic: Cycles 1 to 1000
     const nextTrack = (trackId % 1000) + 1;
     setTrackId(nextTrack);
-    startProceduralPunk(nextTrack - 1); 
-    notify(`PUNK ROTATION: TRACK #${formatTrackNum(nextTrack)}`, "info");
+    startProceduralRap(nextTrack - 1); 
+    notify(`RAP ROTATION: BEAT #${formatTrackNum(nextTrack)}`, "info");
 
-    const nextInterval = 20000; // STRICT 20 SECONDS
+    const nextInterval = 20000; 
     if (trackTimerRef.current) window.clearTimeout(trackTimerRef.current);
     trackTimerRef.current = window.setTimeout(cycleTrack, nextInterval);
-  }, [trackId, startProceduralPunk]);
+  }, [trackId, startProceduralRap]);
 
   const toggleAudio = () => {
     if (isAudioActive) {
@@ -282,8 +308,8 @@ const App: React.FC = () => {
       playInteractionSFX(300, 'sine', 0.2, 0.04);
     } else {
       setIsAudioActive(true);
-      startProceduralPunk(trackId - 1);
-      notify(`PUNK UPLINK: TRACK #${formatTrackNum(trackId)}`, "info");
+      startProceduralRap(trackId - 1);
+      notify(`RAP UPLINK: BEAT #${formatTrackNum(trackId)}`, "info");
       
       const nextInterval = 20000; 
       if (trackTimerRef.current) window.clearTimeout(trackTimerRef.current);
@@ -450,8 +476,8 @@ const App: React.FC = () => {
                   onClick={toggleAudio}
                   className={`p-2.5 border rounded-xl transition-all shadow-lg flex items-center gap-2 active:scale-95 ${isAudioActive ? 'bg-amber-500 text-slate-950 border-amber-600' : 'bg-slate-900/60 border-slate-700 text-slate-500'}`}
                 >
-                  {isAudioActive ? <Music4 size={20} className="animate-spin" /> : <VolumeX size={20} />}
-                  <span className="hidden lg:inline text-[9px] font-tactical font-black uppercase tracking-widest">{isAudioActive ? `PUNK #${formatTrackNum(trackId)}` : 'UPLINK OFF'}</span>
+                  {isAudioActive ? <Headphones size={20} className="animate-pulse" /> : <VolumeX size={20} />}
+                  <span className="hidden lg:inline text-[9px] font-tactical font-black uppercase tracking-widest">{isAudioActive ? `RAP #${formatTrackNum(trackId)}` : 'UPLINK OFF'}</span>
                 </button>
                 <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-[9px] font-tactical font-black uppercase tracking-widest">
                    <Cpu size={10} className={isSyncing ? 'animate-spin' : ''} />
