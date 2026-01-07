@@ -1,5 +1,5 @@
 
-export type TabType = 'home' | 'opportunities' | 'leaderboard' | 'profile';
+export type TabType = 'home' | 'opportunities' | 'community' | 'leaderboard' | 'profile';
 
 export interface World {
   id: string;
@@ -61,6 +61,16 @@ export interface NeuralSignal {
   commander: string;
   action: string;
   timestamp: number;
+}
+
+export interface CommunitySquad {
+  id: string;
+  name: string;
+  members: number;
+  goalXp: number;
+  currentXp: number;
+  icon: string;
+  status: 'Active' | 'Locked';
 }
 
 export interface GlobalMesh {

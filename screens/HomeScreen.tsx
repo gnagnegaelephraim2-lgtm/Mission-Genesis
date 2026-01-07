@@ -73,17 +73,19 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ completedMissions, signals = []
           const derivedProgress = getProgress(world.id);
           const worldMissions = getWorldMissions(world.id);
           const isMastered = derivedProgress === 100;
+          const isPulseNexus = world.id === 'health-science';
+
           return (
             <button
               key={world.id}
               onClick={() => onSelectWorld(world)}
-              className={`relative w-full aspect-[18/12] rounded-[3.5rem] overflow-hidden group transition-all duration-700 active:scale-95 shadow-[0_30px_60px_rgba(0,0,0,0.5)] border border-white/5 animate-in slide-up world-card-float hover:shadow-[0_0_40px_rgba(255,255,255,0.1)]`}
+              className={`relative w-full aspect-[18/12] rounded-[3.5rem] overflow-hidden group transition-all duration-700 active:scale-95 shadow-[0_30px_60px_rgba(0,0,0,0.5)] border border-white/5 animate-in slide-up world-card-float ${isPulseNexus ? 'hover:shadow-[0_0_50px_rgba(244,63,94,0.3)] ring-2 ring-transparent hover:ring-rose-500/50' : 'hover:shadow-[0_0_40px_rgba(255,255,255,0.1)]'}`}
               style={{ 
                 animationDelay: `${idx * 150}ms`,
                 '--float-offset': `${idx % 2 === 0 ? '-18px' : '18px'}`
               } as React.CSSProperties}
             >
-              <div className={`absolute inset-0 bg-gradient-to-br ${world.gradient} opacity-80 group-hover:opacity-100 transition-opacity duration-1000`}></div>
+              <div className={`absolute inset-0 bg-gradient-to-br ${world.gradient} ${isPulseNexus ? 'opacity-90' : 'opacity-80'} group-hover:opacity-100 transition-opacity duration-1000`}></div>
               
               <div className="absolute top-6 right-8 text-white/20 font-tactical text-[10px] tracking-[0.6em] uppercase pointer-events-none truncate max-w-[50%] text-right font-black italic">
                 GRID // {world.id.slice(0,3).toUpperCase()}
@@ -98,7 +100,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ completedMissions, signals = []
                       </span>
                     </div>
                   </div>
-                  <div className={`text-6xl md:text-7xl filter drop-shadow-[0_0_40px_rgba(255,255,255,0.4)] transition-all duration-700 ease-out shrink-0 ml-4 ${isMastered ? 'scale-110 rotate-12 animate-bounce' : 'group-hover:scale-125 group-hover:-rotate-6 animate-pulse-glow'}`}>
+                  <div className={`text-6xl md:text-7xl filter drop-shadow-[0_0_40px_rgba(255,255,255,0.4)] transition-all duration-700 ease-out shrink-0 ml-4 ${
+                    isMastered ? 'scale-110 rotate-12 animate-bounce' : 
+                    isPulseNexus ? 'animate-[pulse_2s_infinite] scale-110' :
+                    'group-hover:scale-125 group-hover:-rotate-6 animate-pulse-glow'
+                  }`}>
                     {isMastered ? '🏆' : world.icon}
                   </div>
                 </div>
