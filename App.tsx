@@ -20,8 +20,6 @@ import {
   ChevronLeft,
   Sun,
   Moon,
-  Wifi,
-  WifiOff,
   Activity,
   Share2,
   CheckCircle2
@@ -70,7 +68,6 @@ const App: React.FC = () => {
   };
 
   const shareNeuralLink = async () => {
-    // Normalize URL to strip session garbage and ensure friends land on the same mesh
     const cleanUrl = window.location.origin + window.location.pathname;
     const inviteText = `Commander ${userProfile.username} has initiated a Neural Uplink. Join the Genesis Mesh and secure your sector: ${cleanUrl}`;
     
@@ -103,7 +100,6 @@ const App: React.FC = () => {
       
       let data: GlobalMesh;
       if (res.status === 404 || !res.ok) {
-        // Fallback for first-time initialization
         data = { commanders: [], signals: [] };
       } else {
         data = await res.json();
@@ -128,7 +124,6 @@ const App: React.FC = () => {
         updatedMesh.commanders.push(userEntry);
         shouldPush = true;
       } else {
-        // Only push if local progress is ahead of global mesh
         if (userXp > updatedMesh.commanders[userIndex].xp || updatedMesh.commanders[userIndex].username !== userProfile.username) {
           updatedMesh.commanders[userIndex] = userEntry;
           shouldPush = true;
@@ -296,16 +291,7 @@ const App: React.FC = () => {
                 >
                   <Share2 size={20} />
                 </button>
-                <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-[9px] font-tactical font-black uppercase tracking-widest transition-all duration-500 ${
-                  syncError 
-                  ? 'text-rose-500 border-rose-500/30 bg-rose-500/5 shadow-[0_0_15px_rgba(244,63,94,0.1)]' 
-                  : isSyncing 
-                    ? 'text-amber-500 border-amber-500/30 bg-amber-500/5 animate-pulse' 
-                    : 'text-emerald-500 border-emerald-500/30 bg-emerald-500/5 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
-                }`}>
-                  {syncError ? <WifiOff size={10} /> : <Wifi size={10} className={isSyncing ? 'animate-pulse' : ''} />}
-                  SUB-SPACE LINK: {syncError ? 'OFFLINE' : isSyncing ? 'SYNCING...' : 'ONLINE'}
-                </div>
+                {/* SUB-SPACE LINK status indicator removed as per visual instructions */}
                 <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className={`p-2.5 border rounded-xl transition-all shadow-md ${theme === 'dark' ? 'bg-slate-800/50 border-slate-700 text-slate-400' : 'bg-white border-slate-300 text-slate-600'}`}>
                   {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
                 </button>

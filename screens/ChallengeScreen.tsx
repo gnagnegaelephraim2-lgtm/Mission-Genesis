@@ -30,7 +30,6 @@ const ChallengeScreen: React.FC<ChallengeScreenProps> = ({ world, completedMissi
           </div>
         </div>
         
-        {/* Sector Stats Bar */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 dark:bg-slate-900/40 bg-white border dark:border-slate-800 border-slate-300 p-6 rounded-3xl backdrop-blur-md max-w-4xl shadow-sm">
            <div className="flex flex-col items-center sm:border-r dark:border-slate-800 border-slate-200">
               <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Status</span>
@@ -67,56 +66,59 @@ const ChallengeScreen: React.FC<ChallengeScreenProps> = ({ world, completedMissi
               className={`relative w-full rounded-[3rem] p-8 text-left transition-all duration-300 group overflow-hidden border shadow-3xl ${
                 chapter.locked 
                 ? 'bg-slate-950/40 border-slate-800 opacity-50 cursor-not-allowed' 
-                : 'dark:bg-slate-900/60 bg-white dark:border-white/5 border-slate-300 active:scale-95 hover:border-amber-500/40 dark:hover:bg-slate-800/80 hover:bg-slate-50'
+                : `bg-gradient-to-br ${world.gradient} border-white/20 active:scale-[0.98] hover:brightness-110 shadow-2xl`
               }`}
             >
-              <div className="flex justify-between items-start mb-10 relative z-10">
-                <div>
+              <div className="flex justify-between items-center mb-10 relative z-10">
+                <div className="flex-1">
                   <div className="flex items-center gap-2 mb-3">
-                    <span className={`text-[10px] font-tactical font-black tracking-[0.3em] uppercase px-3 py-1 rounded-lg ${isFullyCompleted ? 'bg-green-500/10 text-green-600' : 'bg-amber-500/10 text-amber-600'}`}>
+                    <span className={`text-[10px] font-tactical font-black tracking-[0.3em] uppercase px-3 py-1 rounded-lg ${isFullyCompleted ? 'bg-green-500/20 text-green-300' : 'bg-white/20 text-white'}`}>
                       PHASE 0{idx + 1}
                     </span>
                   </div>
-                  <h3 className={`text-3xl font-tactical font-black leading-tight uppercase italic tracking-tighter ${isFullyCompleted ? 'text-green-600' : 'dark:text-white text-slate-900'}`}>
+                  <h3 className={`text-3xl font-tactical font-black leading-tight uppercase italic tracking-tighter text-white drop-shadow-md`}>
                     {chapter.title}
                   </h3>
                   <div className="flex items-center gap-6 mt-4">
-                    <div className="flex items-center gap-2 text-slate-500">
+                    <div className="flex items-center gap-2 text-white/70">
                       <Target size={16} />
                       <span className="text-[10px] font-tactical font-black uppercase tracking-widest">{missionIds.length} Objectives</span>
                     </div>
-                    <div className="flex items-center gap-2 text-slate-500">
+                    <div className="flex items-center gap-2 text-white/70">
                       <Zap size={16} />
                       <span className="text-[10px] font-tactical font-black uppercase tracking-widest">+{missionIds.length * 650} XP</span>
                     </div>
                   </div>
                 </div>
                 
-                <div className={`w-20 h-20 rounded-3xl flex items-center justify-center transition-all duration-500 ${
+                <div className={`w-20 h-20 rounded-full flex items-center justify-center transition-all duration-500 shrink-0 ml-4 relative ${
                   isFullyCompleted
-                  ? 'bg-emerald-500 text-slate-950 shadow-[0_0_40px_rgba(34,197,94,0.3)]'
+                  ? 'bg-emerald-500 text-slate-950 shadow-[0_0_40px_rgba(34,197,94,0.6)]'
                   : chapter.locked 
                     ? 'bg-slate-800 text-slate-600' 
-                    : 'bg-amber-500 text-slate-950 shadow-[0_0_40px_rgba(245,158,11,0.3)] group-hover:scale-110 group-hover:rotate-12'
+                    : 'bg-amber-500 text-slate-950 shadow-[0_0_40px_rgba(245,158,11,0.8)] group-hover:scale-110'
                 }`}>
+                  <div className="absolute inset-0 bg-white/20 rounded-full animate-ping opacity-20 pointer-events-none"></div>
                   {isFullyCompleted ? <CheckCircle2 size={40} /> : chapter.locked ? <Lock size={32} /> : <Play size={40} className="fill-slate-950 ml-1" />}
                 </div>
               </div>
 
               <div className="space-y-4 relative z-10">
                 <div className="flex justify-between text-[11px] font-tactical font-black tracking-[0.2em] uppercase px-1">
-                  <span className={isFullyCompleted ? 'text-green-600' : 'text-slate-500'}>{isFullyCompleted ? 'SECTOR SECURED' : 'SYNC PROGRESS'}</span>
-                  <span className="dark:text-white/60 text-slate-700">{Math.round(progress)}%</span>
+                  <span className="text-white/60">{isFullyCompleted ? 'SECTOR SECURED' : 'SYNC PROGRESS'}</span>
+                  <span className="text-white font-black">{Math.round(progress)}%</span>
                 </div>
-                <div className="h-3 w-full dark:bg-black/40 bg-slate-200 rounded-full p-[2px] border dark:border-white/5 border-slate-300 overflow-hidden shadow-inner">
+                <div className="h-3 w-full bg-black/30 rounded-full p-[2px] border border-white/10 overflow-hidden shadow-inner">
                   <div 
-                    className={`h-full transition-all duration-1000 rounded-full relative ${isFullyCompleted ? 'bg-green-500 shadow-[0_0_20px_green]' : 'bg-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.6)]'}`}
+                    className={`h-full transition-all duration-1000 rounded-full relative ${isFullyCompleted ? 'bg-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.8)]' : 'bg-white shadow-[0_0_20px_white]'}`}
                     style={{ width: `${Math.max(progress, 4)}%` }}
                   >
-                    <div className="absolute inset-0 shimmer opacity-30"></div>
+                    <div className="absolute inset-0 shimmer opacity-40"></div>
                   </div>
                 </div>
               </div>
+              
+              <div className="absolute -bottom-4 -right-4 w-32 h-32 bg-white/5 rounded-full blur-3xl group-hover:bg-white/10 transition-colors"></div>
             </button>
           );
         })}
