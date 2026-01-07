@@ -56,11 +56,16 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ completedMissions, signals = []
          </div>
       </div>
 
-      <div className="mb-12 relative text-left">
+      <div className="mb-12 relative text-left inline-block w-full">
+        {/* Animated Dashed Selection Box (from the mockup) */}
+        <div className="absolute -inset-x-6 -inset-y-4 border-2 border-dashed border-blue-500/30 rounded-lg animate-[pulse_3s_infinite] pointer-events-none hidden md:block"></div>
+        
         <div className="absolute -left-6 md:-left-10 top-1/2 -translate-y-1/2 w-2 h-20 bg-amber-500/30 shadow-[0_0_30px_rgba(245,158,11,0.3)] rounded-full animate-pulse"></div>
-        <h2 className="text-5xl md:text-7xl font-tactical font-black tracking-tighter leading-none mb-4 glitch uppercase text-white" data-text="GAME WORLDS">
+        
+        <h2 className="text-5xl md:text-7xl font-tactical font-black tracking-tighter leading-none mb-4 glitch uppercase text-white animate-tracking-in-expand" data-text="GAME WORLDS">
           GAME WORLDS
         </h2>
+        
         <div className="flex items-center gap-3">
           <p className="text-slate-500 text-[11px] md:text-xs font-tactical font-bold uppercase tracking-[0.5em] italic opacity-60">Global Sector Grid // Operational Status: Normal</p>
           <div className="flex-1 h-[1px] bg-slate-800/40"></div>
@@ -179,6 +184,55 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ completedMissions, signals = []
         }
         .animate-pulse-glow {
           animation: pulse-glow 2s infinite ease-in-out;
+        }
+
+        /* Glitch Animation */
+        .glitch {
+          position: relative;
+        }
+        .glitch::before, .glitch::after {
+          content: attr(data-text);
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: #010409;
+        }
+        .glitch::before {
+          left: 2px;
+          text-shadow: -2px 0 #ff00c1;
+          clip: rect(44px, 450px, 56px, 0);
+          animation: glitch-anim 5s infinite linear alternate-reverse;
+        }
+        .glitch::after {
+          left: -2px;
+          text-shadow: -2px 0 #00fff9, 2px 2px #ff00c1;
+          animation: glitch-anim2 1s infinite linear alternate-reverse;
+        }
+
+        @keyframes glitch-anim {
+          0% { clip: rect(41px, 9999px, 86px, 0); transform: skew(0.35deg); }
+          5% { clip: rect(65px, 9999px, 81px, 0); transform: skew(0.15deg); }
+          10% { clip: rect(47px, 9999px, 34px, 0); transform: skew(0.4deg); }
+          15% { clip: rect(10px, 9999px, 12px, 0); transform: skew(0.8deg); }
+          20% { clip: rect(32px, 9999px, 7px, 0); transform: skew(0.4deg); }
+          100% { clip: rect(41px, 9999px, 86px, 0); transform: skew(0.35deg); }
+        }
+
+        @keyframes glitch-anim2 {
+          0% { clip: rect(2px, 9999px, 20px, 0); transform: skew(0.4deg); }
+          50% { clip: rect(10px, 9999px, 15px, 0); transform: skew(-0.1deg); }
+          100% { clip: rect(2px, 9999px, 20px, 0); transform: skew(0.4deg); }
+        }
+
+        @keyframes tracking-in-expand {
+          0% { letter-spacing: -0.5em; opacity: 0; transform: scale(1.15); }
+          40% { opacity: 0.6; }
+          100% { opacity: 1; transform: scale(1); }
+        }
+        .animate-tracking-in-expand {
+          animation: tracking-in-expand 0.8s cubic-bezier(0.215, 0.610, 0.355, 1.000) both;
         }
       `}</style>
     </div>
