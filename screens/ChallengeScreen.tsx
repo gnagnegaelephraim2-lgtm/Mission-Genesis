@@ -26,18 +26,18 @@ const ChallengeScreen: React.FC<ChallengeScreenProps> = ({ world, completedMissi
           </div>
           <div className="flex-1 min-w-[200px]">
             <span className="text-amber-500 font-tactical font-black text-[11px] tracking-[0.4em] uppercase mb-2 block">Sector Tactical Profile</span>
-            <h2 className="text-5xl font-tactical font-black dark:text-white text-slate-900 tracking-tighter uppercase italic leading-none">{world.title}</h2>
+            <h2 className="text-5xl font-tactical font-black text-white tracking-tighter uppercase italic leading-none">{world.title}</h2>
           </div>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 dark:bg-slate-900/40 bg-white border dark:border-slate-800 border-slate-300 p-6 rounded-3xl backdrop-blur-md max-w-4xl shadow-sm">
-           <div className="flex flex-col items-center sm:border-r dark:border-slate-800 border-slate-200">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-950/40 border border-slate-800 p-6 rounded-3xl backdrop-blur-md max-w-4xl shadow-sm">
+           <div className="flex flex-col items-center sm:border-r border-slate-800">
               <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Status</span>
               <span className="text-xs font-tactical font-black text-emerald-600 tracking-[0.2em]">OPERATIONAL</span>
            </div>
-           <div className="flex flex-col items-center sm:border-r dark:border-slate-800 border-slate-200">
+           <div className="flex flex-col items-center sm:border-r border-slate-800">
               <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Node Level</span>
-              <span className="text-xs font-tactical font-black dark:text-white text-slate-900">GEN-0{world.id.length % 5 + 1}</span>
+              <span className="text-xs font-tactical font-black text-white">GEN-0{world.id.length % 5 + 1}</span>
            </div>
            <div className="flex flex-col items-center">
               <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Security Priority</span>
@@ -48,7 +48,7 @@ const ChallengeScreen: React.FC<ChallengeScreenProps> = ({ world, completedMissi
 
       <div className="flex items-center gap-3 mb-8">
          <div className="w-1.5 h-4 bg-amber-500"></div>
-         <span className="text-xs font-tactical font-black dark:text-white text-slate-900 uppercase tracking-[0.4em]">Operational Phases</span>
+         <span className="text-xs font-tactical font-black text-white uppercase tracking-[0.4em]">Operational Phases</span>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pb-24">
@@ -76,7 +76,7 @@ const ChallengeScreen: React.FC<ChallengeScreenProps> = ({ world, completedMissi
                       PHASE 0{idx + 1}
                     </span>
                   </div>
-                  <h3 className={`text-3xl font-tactical font-black leading-tight uppercase italic tracking-tighter text-white drop-shadow-md`}>
+                  <h3 className="text-3xl font-tactical font-black leading-tight uppercase italic tracking-tighter text-white drop-shadow-md">
                     {chapter.title}
                   </h3>
                   <div className="flex items-center gap-6 mt-4">

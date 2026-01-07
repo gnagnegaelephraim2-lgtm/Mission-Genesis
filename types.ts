@@ -20,6 +20,8 @@ export interface Chapter {
   locked: boolean;
 }
 
+export type MissionType = 'Standard' | 'Rhythm' | 'Data-Stream';
+
 export interface Mission {
   id: number;
   worldId: string; 
@@ -31,6 +33,7 @@ export interface Mission {
   bgGradient: string;
   completed: boolean;
   environment: string;
+  type?: MissionType;
 }
 
 export interface Opportunity {
@@ -40,6 +43,7 @@ export interface Opportunity {
   logo: string;
   recommended: boolean;
   url: string;
+  category: 'Scholarship' | 'University' | 'Fellowship' | 'Training';
 }
 
 export interface Player {

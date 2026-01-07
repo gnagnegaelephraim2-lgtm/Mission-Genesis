@@ -9,15 +9,12 @@ interface MissionsScreenProps {
   completedMissions: number[];
   onBack: () => void;
   onSelectMission: (mission: Mission) => void;
-  // theme prop added to resolve reference error
-  theme?: string;
 }
 
 const MissionsScreen: React.FC<MissionsScreenProps> = ({ 
   chapter, 
   completedMissions, 
-  onSelectMission,
-  theme = 'dark' 
+  onSelectMission 
 }) => {
   const chapterMissionIds = CHAPTER_MISSION_IDS[chapter.id] || [];
   const filteredMissions = MISSIONS.filter(m => chapterMissionIds.includes(m.id));
@@ -27,22 +24,21 @@ const MissionsScreen: React.FC<MissionsScreenProps> = ({
 
   return (
     <div className="p-6 md:p-10">
-      {/* Immersive Chapter Header */}
       <div className="mb-12 text-left max-w-4xl">
         <div className="flex items-center gap-3 mb-4">
-           <span className="text-amber-600 font-tactical font-black text-xs tracking-[0.4em] uppercase italic">Operational Directives</span>
+           <span className="text-amber-500 font-tactical font-black text-xs tracking-[0.4em] uppercase italic">Operational Directives</span>
         </div>
-        <h2 className="text-4xl md:text-5xl font-tactical font-black dark:text-white text-slate-900 leading-none uppercase tracking-tighter italic mb-6">
+        <h2 className="text-4xl md:text-5xl font-tactical font-black text-white leading-none uppercase tracking-tighter italic mb-6">
           {chapter.title}
         </h2>
         <div className="flex items-center gap-6">
-          <div className="flex-1 h-3 dark:bg-slate-900 bg-slate-300 rounded-full overflow-hidden border dark:border-white/5 border-slate-400 shadow-inner">
+          <div className="flex-1 h-3 bg-slate-900 rounded-full overflow-hidden border border-slate-800 shadow-inner">
              <div 
                className="h-full bg-gradient-to-r from-amber-600 to-amber-400 transition-all duration-1000 shadow-[0_0_15px_rgba(245,158,11,0.5)]" 
                style={{ width: `${progressPercent}%` }}
              ></div>
           </div>
-          <span className="text-xs font-black dark:text-white/60 text-slate-700 uppercase tracking-[0.3em] font-tactical whitespace-nowrap">
+          <span className="text-xs font-black text-slate-500 uppercase tracking-[0.3em] font-tactical whitespace-nowrap">
             {Math.round(progressPercent)}% SECURED
           </span>
         </div>
@@ -56,15 +52,21 @@ const MissionsScreen: React.FC<MissionsScreenProps> = ({
 
           if (isLocked) {
             return (
-              <div key={mission.id} className="w-full relative overflow-hidden rounded-[2rem] border dark:border-slate-800 border-slate-300 dark:bg-slate-900/40 bg-white/50 flex items-center p-6 gap-6 transition-opacity opacity-60">
-                <div className="w-16 h-16 flex-shrink-0 rounded-2xl dark:bg-slate-800/60 bg-slate-200 flex items-center justify-center font-tactical font-black text-3xl text-slate-500">
+              <div key={mission.id} className="w-full relative overflow-hidden rounded-[2.5rem] border border-slate-800/50 bg-slate-900/20 flex items-center p-6 gap-6 transition-all grayscale opacity-30 select-none">
+                <div className="w-16 h-16 flex-shrink-0 rounded-2xl bg-slate-950 flex items-center justify-center font-tactical font-black text-3xl text-slate-800 border border-slate-800/50">
                   {idx + 1}
                 </div>
                 <div className="flex-1 space-y-3">
-                  <div className="h-4 w-[80%] dark:bg-slate-800 bg-slate-300 rounded-full"></div>
-                  <div className="h-2.5 w-[50%] dark:bg-slate-900/80 bg-slate-200 rounded-full"></div>
+                  <div className="h-4 w-[80%] bg-slate-950 rounded-lg relative overflow-hidden">
+                    <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(245,158,11,0.05)_50%,transparent_75%)] bg-[length:20px_20px] animate-[ticker-scroll_2s_linear_infinite]"></div>
+                  </div>
+                  <div className="h-2.5 w-[50%] bg-slate-950/80 rounded-lg"></div>
                 </div>
-                <Lock size={24} className="text-slate-500 mr-2" />
+                <div className="p-4 rounded-2xl bg-slate-950 border border-amber-500/20 shadow-[0_0_20px_rgba(245,158,11,0.1)]">
+                  <Lock size={24} className="text-amber-500 animate-pulse drop-shadow-[0_0_12px_rgba(245,158,11,0.6)]" />
+                </div>
+                
+                <div className="absolute inset-0 bg-[linear-gradient(rgba(245,158,11,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(245,158,11,0.02)_1px,transparent_1px)] bg-[size:10px_10px] pointer-events-none"></div>
               </div>
             );
           }
@@ -75,21 +77,21 @@ const MissionsScreen: React.FC<MissionsScreenProps> = ({
               onClick={() => onSelectMission(mission)}
               className={`w-full relative overflow-hidden rounded-[2.5rem] border transition-all duration-300 flex flex-col p-6 md:p-8 text-left group ${
                 isCompleted 
-                ? 'bg-emerald-500/5 border-emerald-500/20 shadow-md' 
-                : 'dark:bg-slate-900/60 bg-white dark:border-slate-800 border-slate-300 hover:border-amber-500/30 dark:hover:bg-slate-800/80 hover:bg-slate-50 active:scale-[0.98] shadow-sm'
+                ? 'bg-emerald-500/5 border-emerald-500/30 shadow-2xl' 
+                : 'bg-slate-900/40 border-slate-800 hover:border-amber-500/40 hover:bg-slate-900/80 active:scale-[0.98] shadow-lg'
               }`}
             >
               <div className="flex items-center gap-6 mb-5">
                 <div className={`w-16 h-16 flex-shrink-0 rounded-2xl flex items-center justify-center font-tactical font-black text-2xl transition-all ${
                   isCompleted 
-                  ? 'bg-emerald-500 text-slate-950 shadow-lg'
-                  : 'bg-amber-500 text-slate-950 shadow-lg group-hover:scale-105'
+                  ? 'bg-emerald-500 text-slate-950 shadow-[0_0_20px_rgba(16,185,129,0.4)]'
+                  : 'bg-amber-500 text-slate-950 shadow-[0_0_20px_rgba(245,158,11,0.4)] group-hover:scale-105'
                 }`}>
                   {isCompleted ? <CheckCircle2 size={32} strokeWidth={3} /> : idx + 1}
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <h3 className={`font-tactical text-lg md:text-xl font-black uppercase truncate tracking-tight mb-1 ${isCompleted ? 'text-emerald-600' : 'dark:text-white text-slate-900'}`}>
+                  <h3 className={`font-tactical text-lg md:text-xl font-black uppercase truncate tracking-tight mb-1 ${isCompleted ? 'text-emerald-500' : 'text-white'}`}>
                     {mission.title}
                   </h3>
                   <div className="flex items-center gap-4">
@@ -98,16 +100,16 @@ const MissionsScreen: React.FC<MissionsScreenProps> = ({
                       <span className="text-[10px] font-black text-slate-500 font-tactical uppercase tracking-widest">{isCompleted ? 'SECURED' : `+${mission.xp} XP`}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className={`text-[10px] font-black font-tactical tracking-widest ${mission.difficulty === 'Expert' ? 'text-rose-500' : 'text-slate-500'}`}>{mission.difficulty.toUpperCase()}</span>
+                      <ShieldAlert size={12} className={mission.difficulty === 'Expert' ? 'text-rose-500' : 'text-slate-600'} />
+                      <span className={`text-[10px] font-black font-tactical tracking-widest ${mission.difficulty === 'Expert' ? 'text-rose-500' : 'text-slate-600'}`}>{mission.difficulty.toUpperCase()}</span>
                     </div>
                   </div>
                 </div>
               </div>
 
               <div className="pl-20 relative">
-                 <div className="absolute left-16 top-0 bottom-0 w-[1.5px] dark:bg-slate-800 bg-slate-300"></div>
-                 {/* theme reference fixed here using the prop */}
-                 <p className={`text-sm md:text-base leading-relaxed font-medium italic group-hover:text-slate-600 transition-colors ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
+                 <div className="absolute left-16 top-0 bottom-0 w-[1.5px] bg-slate-800"></div>
+                 <p className="text-sm md:text-base leading-relaxed font-medium italic text-slate-400 group-hover:text-slate-300 transition-colors">
                    "{mission.story}"
                  </p>
               </div>

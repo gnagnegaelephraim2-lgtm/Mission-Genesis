@@ -1,7 +1,7 @@
 
 import React, { useMemo } from 'react';
 import { Player } from '../types';
-import { Trophy, Zap, Medal, RefreshCw, Loader2, Radio, Info, Activity, Share2, UserPlus } from 'lucide-react';
+import { Trophy, Zap, Medal, RefreshCw, Loader2, Radio, Info, Activity, UserPlus } from 'lucide-react';
 
 interface LeaderboardScreenProps {
   userXp: number;
@@ -29,28 +29,14 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({
 
     let pool = [...meshCommanders];
     const uniquePoolMap = new Map<string, Player>();
-    pool.forEach(p => {
-      if (p.id) uniquePoolMap.set(p.id, p);
-    });
+    pool.forEach(p => { if (p.id) uniquePoolMap.set(p.id, p); });
 
     uniquePoolMap.set(userProfile.id || 'current-user', {
-      rank: 0,
-      username: userProfile.username,
-      xp: userXp,
-      avatar: userProfile.avatar,
-      isUser: true,
-      id: userProfile.id || 'current-user',
-      lastActive: Date.now()
+      rank: 0, username: userProfile.username, xp: userXp, avatar: userProfile.avatar, isUser: true, id: userProfile.id || 'current-user', lastActive: Date.now()
     });
 
-    shadows.forEach(s => {
-      if (!uniquePoolMap.has(s.id!)) uniquePoolMap.set(s.id!, s);
-    });
-
-    const finalPool = Array.from(uniquePoolMap.values());
-    return finalPool
-      .sort((a, b) => b.xp - a.xp)
-      .map((p, i) => ({ ...p, rank: i + 1 }));
+    shadows.forEach(s => { if (!uniquePoolMap.has(s.id!)) uniquePoolMap.set(s.id!, s); });
+    return Array.from(uniquePoolMap.values()).sort((a, b) => b.xp - a.xp).map((p, i) => ({ ...p, rank: i + 1 }));
   }, [userXp, userProfile, meshCommanders]);
 
   const currentUser = dynamicPlayers.find(p => p.isUser);
@@ -61,7 +47,7 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({
       <div className="mb-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div className="text-left">
           <div className="flex items-center gap-3">
-             <h2 className="text-4xl font-tactical font-black dark:text-white text-slate-900 tracking-tighter italic uppercase">Neural Ranks</h2>
+             <h2 className="text-4xl font-tactical font-black text-white tracking-tighter italic uppercase">Neural Ranks</h2>
              <div className={`px-3 py-1 rounded-lg border font-tactical font-black text-[10px] tracking-widest flex items-center gap-2 transition-colors duration-500 ${
                isSyncing ? 'bg-amber-500/10 border-amber-500/30 text-amber-500' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500'
              }`}>
@@ -69,25 +55,17 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({
                 {isSyncing ? 'UPLINKING...' : 'MESH LIVE'}
              </div>
           </div>
-          <p className="dark:text-slate-500 text-slate-700 text-xs font-tactical font-bold uppercase tracking-[0.2em] mt-2 italic">
-            Global Standing: <span className="dark:text-white text-slate-950 font-black italic">Sector Rank #{userRank}</span>
+          <p className="text-slate-500 text-xs font-tactical font-bold uppercase tracking-[0.2em] mt-2 italic">
+            Global Standing: <span className="text-white font-black italic">Sector Rank #{userRank}</span>
           </p>
         </div>
         
         <div className="flex gap-3">
-          <button 
-            onClick={onShareInvite}
-            className="flex-1 sm:flex-none bg-amber-500 text-slate-950 px-6 py-3 rounded-2xl flex items-center justify-center gap-3 transition-all active:scale-95 shadow-xl hover:shadow-[0_0_40px_rgba(245,158,11,0.4)] group"
-          >
+          <button onClick={onShareInvite} className="flex-1 sm:flex-none bg-amber-500 text-slate-950 px-6 py-3 rounded-2xl flex items-center justify-center gap-3 transition-all active:scale-95 shadow-xl hover:shadow-[0_0_40px_rgba(245,158,11,0.4)] group">
             <UserPlus size={18} className="group-hover:scale-110 transition-transform" />
             <span className="text-[10px] font-tactical font-black uppercase tracking-widest">Recruit Squad</span>
           </button>
-          
-          <button 
-            onClick={onRefresh}
-            disabled={isSyncing}
-            className="bg-slate-900 border border-slate-800 hover:border-amber-500/50 text-slate-400 hover:text-white px-5 py-3 rounded-2xl flex items-center justify-center gap-3 transition-all active:scale-95 shadow-xl group"
-          >
+          <button onClick={onRefresh} disabled={isSyncing} className="bg-slate-950 border border-slate-800 hover:border-amber-500/50 text-slate-400 hover:text-white px-5 py-3 rounded-2xl flex items-center justify-center gap-3 transition-all active:scale-95 shadow-xl group">
             {isSyncing ? <Loader2 size={18} className="animate-spin text-amber-500" /> : <RefreshCw size={18} className="group-hover:rotate-180 transition-transform duration-700" />}
           </button>
         </div>
@@ -97,56 +75,44 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({
         {dynamicPlayers.map((player) => {
           const isShadow = player.id?.startsWith('shadow');
           const isLive = player.lastActive && (Date.now() - player.lastActive < 600000);
-
           return (
             <div 
               key={player.id || player.username} 
               className={`flex items-center p-5 rounded-[2rem] border transition-all duration-500 group ${
                 player.isUser 
                 ? 'bg-amber-500/10 border-amber-500 shadow-xl scale-[1.02] z-10' 
-                : 'dark:bg-slate-900/40 bg-white border-slate-800 dark:hover:border-slate-700 hover:border-amber-500/30 shadow-md'
+                : 'bg-slate-900/60 border-slate-800 hover:border-slate-700 shadow-md'
               }`}
             >
               <div className="w-12 flex flex-col items-center shrink-0">
                 {player.rank <= 3 ? (
                   <Medal size={28} className={`${
                     player.rank === 1 ? 'text-yellow-400 drop-shadow-[0_0_12px_rgba(250,204,21,0.6)]' : 
-                    player.rank === 2 ? 'text-slate-400' : 
-                    'text-amber-600'
+                    player.rank === 2 ? 'text-slate-400' : 'text-amber-600'
                   } animate-pulse`} />
                 ) : (
-                  <span className="font-tactical font-black dark:text-slate-600 text-slate-400 text-lg">#{player.rank}</span>
+                  <span className="font-tactical font-black text-slate-600 text-lg">#{player.rank}</span>
                 )}
               </div>
-
               <div className="relative mx-4 shrink-0">
-                <div className={`w-14 h-14 rounded-full flex items-center justify-center text-3xl border-2 transition-all ${player.isUser ? 'bg-slate-900 border-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.4)]' : 'bg-slate-800 border-slate-700 group-hover:border-slate-500'}`}>
+                <div className={`w-14 h-14 rounded-full flex items-center justify-center text-3xl border-2 transition-all ${player.isUser ? 'bg-slate-950 border-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.4)]' : 'bg-slate-900 border-slate-800 group-hover:border-slate-500'}`}>
                   {player.avatar}
                 </div>
                 {isLive && !isShadow && (
                   <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-slate-950 shadow-[0_0_10px_rgba(16,185,129,0.8)] animate-pulse"></div>
                 )}
               </div>
-
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className={`font-tactical font-black text-base uppercase truncate ${player.isUser ? 'text-amber-600' : 'dark:text-white text-slate-900'}`}>
-                    {player.username}
-                  </h3>
+                  <h3 className={`font-tactical font-black text-base uppercase truncate ${player.isUser ? 'text-amber-500' : 'text-white'}`}>{player.username}</h3>
                   {player.isUser && <span className="text-[8px] px-2 py-0.5 bg-amber-500 text-slate-950 rounded-lg font-black uppercase tracking-tighter">ME</span>}
                   {isShadow && <span className="text-[8px] px-2 py-0.5 border border-slate-700 text-slate-500 rounded-lg font-black uppercase tracking-tighter opacity-50">ELITE CORE</span>}
-                  {isLive && !player.isUser && !isShadow && (
-                    <span className="text-[8px] px-2 py-0.5 bg-emerald-500/20 text-emerald-600 rounded-lg font-black uppercase tracking-tighter flex items-center gap-1">
-                      <Activity size={8} /> LIVE
-                    </span>
-                  )}
                 </div>
                 <div className="flex items-center gap-2 mt-1">
                   <Zap size={12} className="text-amber-500 fill-amber-500" />
-                  <span className={`text-[10px] font-bold ${player.isUser ? 'text-amber-700' : 'dark:text-slate-400 text-slate-600'} tracking-widest uppercase`}>{player.xp.toLocaleString()} XP ACHIEVED</span>
+                  <span className={`text-[10px] font-bold ${player.isUser ? 'text-amber-600' : 'text-slate-400'} tracking-widest uppercase`}>{player.xp.toLocaleString()} XP ACHIEVED</span>
                 </div>
               </div>
-
               <div className="hidden xs:block px-4 py-2 rounded-xl bg-slate-950 border border-slate-800 text-[9px] font-tactical font-black text-slate-500 tracking-widest uppercase shadow-inner">
                 {player.rank === 1 ? 'SUPREME' : player.rank <= 5 ? 'COMMAND' : 'TACTICAL'}
               </div>
@@ -155,10 +121,10 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({
         })}
       </div>
 
-      <div className={`mt-10 p-6 border rounded-[2rem] flex flex-col items-center gap-4 text-center ${isSyncing ? 'animate-pulse' : ''} dark:bg-slate-900/40 bg-white dark:border-slate-800 border-slate-300 shadow-sm`}>
-         <Info size={24} className="dark:text-slate-500 text-slate-400" />
-         <p className="text-[10px] font-tactical font-bold dark:text-slate-500 text-slate-600 uppercase tracking-widest leading-relaxed max-w-sm">
-           Share your <span className="text-amber-600 underline">Neural Link</span> to bring your squad into the mesh. Compete real-time across all global sectors.
+      <div className="mt-10 p-6 border border-slate-800 rounded-[2rem] flex flex-col items-center gap-4 text-center bg-slate-900/40 shadow-sm">
+         <Info size={24} className="text-slate-500" />
+         <p className="text-[10px] font-tactical font-bold text-slate-500 uppercase tracking-widest leading-relaxed max-w-sm">
+           Share your <span className="text-amber-600 underline">Neural Link</span> to bring your squad into the mesh. Compete real-time across global sectors.
          </p>
       </div>
     </div>

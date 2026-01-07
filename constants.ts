@@ -2,6 +2,7 @@
 import { World, Chapter, Mission, Opportunity, Player, SkillProgress } from './types';
 
 export const WORLDS: World[] = [
+  { id: 'env-science', subject: 'ENVIRON', title: "Gaia's Shield", progress: 0, gradient: 'from-teal-400 to-emerald-900', icon: '🌍', color: '#14b8a6' },
   { id: 'computer-science', subject: 'CS', title: 'Neural Mesh', progress: 0, gradient: 'from-blue-600 to-indigo-950', icon: '💻', color: '#3b82f6' },
   { id: 'physics', subject: 'PHYSICS', title: 'Kinetic Pulse', progress: 0, gradient: 'from-cyan-600 to-blue-900', icon: '⚡', color: '#06b6d4' },
   { id: 'biology', subject: 'BIOLOGY', title: 'Bio-Sustain Grid', progress: 0, gradient: 'from-emerald-600 to-teal-900', icon: '🌿', color: '#10b981' },
@@ -9,7 +10,6 @@ export const WORLDS: World[] = [
   { id: 'chemistry', subject: 'CHEMISTRY', title: 'Molecular Forge', progress: 0, gradient: 'from-amber-400 to-orange-700', icon: '🧪', color: '#f59e0b' },
   { id: 'agriculture', subject: 'AGRI', title: 'Verdant Sahel', progress: 0, gradient: 'from-lime-500 to-green-800', icon: '🌾', color: '#84cc16' },
   { id: 'engineering', subject: 'ENG', title: "Titan's Forge", progress: 0, gradient: 'from-slate-600 to-slate-900', icon: '🏗️', color: '#64748b' },
-  { id: 'env-science', subject: 'ENVIRON', title: "Gaia's Shield", progress: 0, gradient: 'from-teal-400 to-emerald-900', icon: '🌍', color: '#14b8a6' },
   { id: 'health-science', subject: 'HEALTH', title: "Pulse Nexus", progress: 0, gradient: 'from-rose-500 to-rose-950', icon: '🧬', color: '#f43f5e' },
   { id: 'robotics', subject: 'BOTX', title: "Automata Grid", progress: 0, gradient: 'from-violet-600 to-purple-950', icon: '🤖', color: '#8b5cf6' },
   { id: 'architecture', subject: 'ARCHI', title: "Skyline Lattice", progress: 0, gradient: 'from-indigo-500 to-slate-900', icon: '🏛️', color: '#6366f1' },
@@ -20,59 +20,42 @@ export const CHAPTERS: Record<string, Chapter[]> = WORLDS.reduce((acc, world) =>
   return acc;
 }, {} as Record<string, Chapter[]>);
 
-const PHYSICS_STORIES = [
-  "Calculate the trajectory of a community water pump lever to maximize efficiency using torque principles.",
-  "Optimize the solar array tilt for a village grid using thermal radiation and photon flux analysis.",
-  "Deploy seismic sensors across the Rift Valley and interpret wave propagation to predict structural stress.",
-  "Design a low-cost refrigeration unit using the Joule-Thomson effect for vaccine storage in remote zones.",
-  "Stabilize the Kinetic Energy Recovery System (KERS) on local transport vehicles to reduce fuel drain.",
-  "Analyze the electromagnetic interference patterns disrupting the regional education broadcasts."
-];
-
-const HEALTH_STORIES = [
-  "Calibrate the neural link for the remote diagnostic nanobots in the Rift Valley clinic.",
-  "Synthesize a localized vaccine derivative using regional botanical genetic markers.",
-  "Optimize the decentralized bio-bank cooling systems using Peltier cooling arrays.",
-  "Program the AI triage bot to prioritize critical metabolic signals in the central hub."
-];
-
-const BOTX_STORIES = [
-  "Deploy a swarm of reforestation drones to replant indigenous seedlings across the Sahel.",
-  "Re-calibrate the hydraulic actuators on the automated labor units in the mining sector.",
-  "Optimize the pathfinding algorithms for the water-delivery bots in urban slums.",
-  "Establish a secure neural link with the orbital relay to coordinate regional bot activities."
-];
-
-const ARCHI_STORIES = [
-  "Design a passive cooling ventilation system for the neo-traditional marketplace.",
-  "Calculate the structural load for the suspended vertical gardens in the central megalopolis.",
-  "Optimize the solar-glass transparency on the skyline lattice to reduce internal heat gain.",
-  "Blueprint a modular low-cost housing unit using carbon-sequestering building materials."
-];
+const REAL_WORLD_SCENARIOS: Record<string, string[]> = {
+  'env-science': [
+    "Deploy IoT flood-warning sensors in the Limpopo basin to prevent seasonal devastation.",
+    "Develop a carbon-credit verification mesh for community-led reforestation in the Congo Basin.",
+    "Expert Protocol: Design a decentralized desalination grid for drought-stricken coastal regions."
+  ],
+  'computer-science': [
+    "Audit the smart-contract logic for a cross-border mobile money insurance protocol.",
+    "Scale a low-bandwidth NLP model for localized African languages in remote educational hubs.",
+    "Expert Protocol: Engineer a quantum-resistant encryption layer for the pan-African central bank mesh."
+  ],
+  'physics': [
+    "Optimize solar-thermal concentrated power yields in the Karoo semi-desert grid.",
+    "Calculate the fluid dynamics for a modular micro-hydro generator in rural river systems.",
+    "Expert Protocol: Develop a plasma-based waste-to-energy conversion system for mega-cities."
+  ],
+  'agriculture': [
+    "Deploy multi-spectral drone analysis to detect locust breeding grounds in the Horn of Africa.",
+    "Design an automated hydroponic system utilizing recycled wastewater for urban vertical farms.",
+    "Expert Protocol: Architect a climate-resilient seed bank using deep-freeze thermal logic."
+  ]
+};
 
 export const MISSIONS: Mission[] = WORLDS.flatMap((world, wIdx) => {
-  let count = 10; 
-  return Array.from({ length: count }).map((_, mIdx) => {
-    const isPhysics = world.id === 'physics';
-    const isHealth = world.id === 'health-science';
-    const isBotx = world.id === 'robotics';
-    const isArchi = world.id === 'architecture';
+  return Array.from({ length: 10 }).map((_, mIdx) => {
+    const difficulty = mIdx < 4 ? 'Medium' : mIdx < 7 ? 'Hard' : 'Expert';
+    const xp = (difficulty === 'Medium' ? 800 : difficulty === 'Hard' ? 1600 : 2500) + (mIdx * 50);
 
-    let story = `Deploying to Sector ${world.subject}-${mIdx + 1}. Mission objective: Secure local ${world.subject.toLowerCase()} data nodes.`;
-    let title = `${world.title} // Tactical Mod ${mIdx + 1}`;
+    const worldScenarios = REAL_WORLD_SCENARIOS[world.id];
+    let story = `Simulating Sector ${world.subject} challenge ${mIdx + 1}. Resolve regional technical bottlenecks.`;
+    let title = `${world.title} // Mod 0${mIdx + 1}`;
 
-    if (isPhysics && mIdx < PHYSICS_STORIES.length) {
-      title = [`Vector Synthesis`, `Thermal Grid Alpha`, `Seismic Mesh`, `Cryo-Logic`, `Kinetic Flow`, `Signal Integrity`][mIdx];
-      story = PHYSICS_STORIES[mIdx];
-    } else if (isHealth && mIdx < HEALTH_STORIES.length) {
-      title = [`Nano-Clinic Sync`, `Botanical Synthesis`, `Bio-Bank Ops`, `Triage Logic`][mIdx];
-      story = HEALTH_STORIES[mIdx];
-    } else if (isBotx && mIdx < BOTX_STORIES.length) {
-      title = [`Dronestrike Flora`, `Actuator Sync`, `Pathfinder Alpha`, `Orbital Link`][mIdx];
-      story = BOTX_STORIES[mIdx];
-    } else if (isArchi && mIdx < ARCHI_STORIES.length) {
-      title = [`Passive Vent Logic`, `Vertical Gravity`, `Solar Lattice`, `Carbon Blueprint`][mIdx];
-      story = ARCHI_STORIES[mIdx];
+    if (worldScenarios) {
+      const scenarioIdx = difficulty === 'Medium' ? 0 : difficulty === 'Hard' ? 1 : 2;
+      story = worldScenarios[scenarioIdx];
+      title = ["Alpha Sync", "Beta Logic", "Gamma Mesh", "Delta Protocol", "Epsilon Core", "Zeta Uplink", "Eta Node", "Theta Pulse", "Iota Stream", "Sigma Secure"][mIdx];
     }
 
     return {
@@ -80,12 +63,13 @@ export const MISSIONS: Mission[] = WORLDS.flatMap((world, wIdx) => {
       worldId: world.id,
       title,
       story,
-      difficulty: mIdx % 3 === 0 ? 'Medium' : mIdx % 3 === 1 ? 'Hard' : 'Expert',
-      xp: 650 + (mIdx * 50),
+      difficulty: difficulty as 'Medium' | 'Hard' | 'Expert',
+      xp,
       locked: mIdx > 0, 
       bgGradient: world.gradient,
       completed: false,
-      environment: `Simulated high-fidelity ${world.subject} combat environment.`
+      environment: `High-fidelity ${world.subject} tactical simulation.`,
+      type: (mIdx % 2 === 0) ? 'Rhythm' : 'Data-Stream'
     };
   });
 });
@@ -98,12 +82,20 @@ export const CHAPTER_MISSION_IDS: Record<string, number[]> = MISSIONS.reduce((ac
 }, {} as Record<string, number[]>);
 
 export const OPPORTUNITIES: Opportunity[] = [
-  { id: 1, name: "YYAS", description: "Yale Young African Scholars Program", logo: "🎓", recommended: true, url: "https://africanscholars.yale.edu/" },
-  { id: 2, name: "RISE Fellowship", description: "Global talent development program", logo: "🚀", recommended: true, url: "https://www.risefortheworld.org/" },
-  { id: 3, name: "YOSA", description: "Young Scientists Academy", logo: "🔬", recommended: true, url: "https://youngscientist.academy/" }
+  { id: 1, name: "ALU", category: 'University', description: "African Leadership University - Innovative leadership training in STEM and social impact.", logo: "🎓", recommended: true, url: "https://www.alueducation.com/" },
+  { id: 2, name: "ALX Africa", category: 'Training', description: "Elite software engineering and data science training for Africa's top talent.", logo: "💻", recommended: true, url: "https://www.alxafrica.com/" },
+  { id: 3, name: "ALCHE", category: 'University', description: "African Leadership College - Specialized undergraduate programmes for global leaders.", logo: "🏛️", recommended: true, url: "https://alcheducation.com/undergraduate-programmes/" },
+  { id: 4, name: "UCT Program", category: 'University', description: "University of Cape Town - Consistently ranked as the top university on the continent.", logo: "🏗️", recommended: true, url: "https://www.uct.ac.za/" },
+  { id: 5, name: "YYAS", category: 'Fellowship', description: "Yale Young African Scholars - Intensive academic and mentorship program.", logo: "🏫", recommended: false, url: "https://africanscholars.yale.edu/" },
+  { id: 6, name: "Ashesi University", category: 'University', description: "Cultivating ethical leadership and critical thinking in West Africa.", logo: "🦁", recommended: true, url: "https://www.ashesi.edu.gh/" },
+  { id: 7, name: "AIMS", category: 'University', description: "African Institute for Mathematical Sciences - Post-graduate excellence in math/physics.", logo: "∞", recommended: true, url: "https://nexteinstein.org/" },
+  { id: 8, name: "MEST Africa", category: 'Training', description: "Pan-African tech entrepreneurship training and seed funding hub.", logo: "🚀", recommended: true, url: "https://meltwater.org/" },
+  { id: 9, name: "AkiraChix", category: 'Training', description: "CodeHive: Empowering young African women with high-end tech skills.", logo: "♀️", recommended: false, url: "https://akirachix.com/" },
+  { id: 10, name: "Mandela Rhodes", category: 'Fellowship', description: "Elite leadership development and postgraduate scholarships for African talent.", logo: "🇿🇦", recommended: true, url: "https://mandelarhodes.org/" },
+  { id: 11, name: "Kibo School", category: 'University', description: "Future-forward online computer science degrees designed for Africans.", logo: "🖥️", recommended: false, url: "https://kibo.school/" },
+  { id: 12, name: "YALI RLC", category: 'Fellowship', description: "Young African Leaders Initiative - Regional Leadership Centers across the continent.", logo: "🤝", recommended: false, url: "https://yali.state.gov/" }
 ];
 
-// Problem solving, System thinking, and Innovation defaulted to zero
 export const SKILLS: SkillProgress[] = [
   { skill: "Problem Solver", progress: 0, badge: "Bronze", icon: "🎯" },
   { skill: "Systems Thinker", progress: 0, badge: "Bronze", icon: "👥" },
