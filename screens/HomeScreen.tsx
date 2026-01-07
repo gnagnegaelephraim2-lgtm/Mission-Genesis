@@ -2,7 +2,7 @@
 import React, { useMemo } from 'react';
 import { WORLDS, MISSIONS } from '../constants';
 import { World, NeuralSignal } from '../types';
-import { Radio, Activity, Loader2, Zap } from 'lucide-react';
+import { Radio, Activity, Loader2, Zap, ArrowUpRight } from 'lucide-react';
 
 interface HomeScreenProps {
   completedMissions: number[];
@@ -27,7 +27,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ completedMissions, signals = []
     const fallbacks: NeuralSignal[] = [
       { id: 'st1', commander: 'Genesis HQ', action: 'Analyzing sector data nodes...', timestamp: Date.now() },
       { id: 'st2', commander: 'Global Grid', action: 'Optimizing regional sub-links...', timestamp: Date.now() },
-      { id: 'st3', commander: 'Echo Node', action: 'New opportunities identified at ALU and ALCHE.', timestamp: Date.now() },
+      { id: 'st3', commander: 'Echo Node', action: 'New opportunities identified at ALU and UCT.', timestamp: Date.now() },
       { id: 'st4', commander: 'System', action: 'Operational readiness maintained at Level 4.', timestamp: Date.now() },
       { id: 'st5', commander: 'Satellite-09', action: 'Weather patterns over Sahel normalized.', timestamp: Date.now() }
     ];
@@ -58,11 +58,14 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ completedMissions, signals = []
       </div>
 
       <div className="mb-12 relative text-left">
-        <div className="absolute -left-6 md:-left-10 top-1/2 -translate-y-1/2 w-2 h-20 bg-amber-500/30 shadow-[0_0_30px_rgba(245,158,11,0.3)] rounded-full"></div>
+        <div className="absolute -left-6 md:-left-10 top-1/2 -translate-y-1/2 w-2 h-20 bg-amber-500/30 shadow-[0_0_30px_rgba(245,158,11,0.3)] rounded-full animate-pulse"></div>
         <h2 className="text-5xl md:text-7xl font-tactical font-black tracking-tighter leading-none mb-4 glitch uppercase text-white" data-text="GAME WORLDS">
           GAME WORLDS
         </h2>
-        <p className="text-slate-500 text-[11px] md:text-xs font-tactical font-bold uppercase tracking-[0.5em] italic opacity-60">Global Sector Grid // Operational Status: Normal</p>
+        <div className="flex items-center gap-3">
+          <p className="text-slate-500 text-[11px] md:text-xs font-tactical font-bold uppercase tracking-[0.5em] italic opacity-60">Global Sector Grid // Operational Status: Normal</p>
+          <div className="flex-1 h-[1px] bg-slate-800/40"></div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 md:gap-10 pb-24">
@@ -74,8 +77,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ completedMissions, signals = []
             <button
               key={world.id}
               onClick={() => onSelectWorld(world)}
-              className="relative w-full aspect-[18/12] rounded-[3rem] overflow-hidden group transition-all duration-700 active:scale-95 shadow-[0_30px_60px_rgba(0,0,0,0.5)] border border-white/5 animate-in slide-up"
-              style={{ animationDelay: `${idx * 100}ms` }}
+              className={`relative w-full aspect-[18/12] rounded-[3.5rem] overflow-hidden group transition-all duration-700 active:scale-95 shadow-[0_30px_60px_rgba(0,0,0,0.5)] border border-white/5 animate-in slide-up world-card-float`}
+              style={{ 
+                animationDelay: `${idx * 150}ms`,
+                '--float-offset': `${idx % 2 === 0 ? '-10px' : '10px'}`
+              } as React.CSSProperties}
             >
               <div className={`absolute inset-0 bg-gradient-to-br ${world.gradient} opacity-80 group-hover:opacity-100 transition-opacity duration-1000`}></div>
               
@@ -92,16 +98,19 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ completedMissions, signals = []
                       </span>
                     </div>
                   </div>
-                  <div className={`text-6xl md:text-7xl filter drop-shadow-[0_0_40px_rgba(255,255,255,0.4)] transition-all duration-700 ease-out shrink-0 ml-4 ${isMastered ? 'scale-110 rotate-12' : 'group-hover:scale-125 group-hover:-rotate-6'}`}>
+                  <div className={`text-6xl md:text-7xl filter drop-shadow-[0_0_40px_rgba(255,255,255,0.4)] transition-all duration-700 ease-out shrink-0 ml-4 ${isMastered ? 'scale-110 rotate-12 animate-bounce' : 'group-hover:scale-125 group-hover:-rotate-6 animate-pulse'}`}>
                     {isMastered ? '🏆' : world.icon}
                   </div>
                 </div>
 
                 <div className="space-y-6 min-w-0">
                   <div className="min-w-0">
-                    <h3 className={`text-3xl md:text-4xl font-tactical font-black text-white leading-tight mb-3 uppercase tracking-tighter italic truncate group-hover:translate-x-1 transition-transform ${isMastered ? 'text-emerald-400' : ''}`}>
-                      {world.title}
-                    </h3>
+                    <div className="flex items-center gap-3 mb-3">
+                      <h3 className={`text-3xl md:text-4xl font-tactical font-black text-white leading-tight uppercase tracking-tighter italic truncate group-hover:translate-x-1 transition-transform ${isMastered ? 'text-emerald-400' : ''}`}>
+                        {world.title}
+                      </h3>
+                      <ArrowUpRight size={24} className="text-white/20 group-hover:text-white group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" />
+                    </div>
                     
                     <div className="space-y-3.5">
                       <div className="flex justify-between items-end px-1 gap-2">
@@ -145,6 +154,19 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ completedMissions, signals = []
           );
         })}
       </div>
+
+      <style>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(var(--float-offset, -10px)); }
+        }
+        .world-card-float {
+          animation: float 6s ease-in-out infinite;
+        }
+        .world-card-float:hover {
+          animation-play-state: paused;
+        }
+      `}</style>
     </div>
   );
 };
