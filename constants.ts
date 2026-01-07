@@ -22,103 +22,49 @@ export const WORLDS: World[] = [
 ];
 
 export const CHAPTERS: Record<string, Chapter[]> = WORLDS.reduce((acc, world) => {
-  acc[world.id] = [{ id: `${world.id}-c1`, title: `${world.title} Phase 1`, status: 'Active', missionsCompleted: 0, totalMissions: 10, locked: false }];
+  acc[world.id] = Array.from({ length: 15 }).map((_, i) => ({
+    id: `${world.id}-p${i + 1}`,
+    title: `${world.title} Phase ${i + 1}`,
+    status: i === 0 ? 'Active' : 'Locked',
+    missionsCompleted: 0,
+    totalMissions: 5,
+    locked: i > 0
+  }));
   return acc;
 }, {} as Record<string, Chapter[]>);
 
-const REAL_WORLD_SCENARIOS: Record<string, string[]> = {
-  'env-science': [
-    "Deploy IoT flood-warning sensors in the Limpopo basin.",
-    "Develop a carbon-credit verification mesh for community reforestation.",
-    "Expert Protocol: Design a decentralized desalination grid for coastal regions."
-  ],
-  'computer-science': [
-    "Audit smart-contract logic for cross-border mobile money insurance.",
-    "Scale low-bandwidth NLP models for localized African languages.",
-    "Expert Protocol: Engineer a quantum-resistant encryption layer for the CBDC mesh."
-  ],
-  'physics': [
-    "Optimize solar-thermal power yields in the Karoo semi-desert.",
-    "Calculate fluid dynamics for modular micro-hydro generators.",
-    "Expert Protocol: Develop plasma-based waste-to-energy conversion systems."
-  ],
-  'agriculture': [
-    "Deploy multi-spectral drones to detect locust breeding grounds.",
-    "Design automated hydroponic systems using recycled wastewater.",
-    "Expert Protocol: Architect a climate-resilient seed bank for the Sahel."
-  ],
-  'health-science': [
-    "Model predictive spread of malaria using satellite telemetry across tropical sectors.",
-    "Engineer cold-chain logistics trackers for drone-based vaccine distribution.",
-    "Expert Protocol: Design AI-driven portable diagnostic scanners for remote village clinics."
-  ],
-  'robotics': [
-    "Calibrate aquatic bots to monitor river pollution.",
-    "Develop kinematic logic for modular 3D-printed prosthetic limbs.",
-    "Expert Protocol: Design autonomous drone-grids for last-mile medical delivery."
-  ],
-  'astronomy': [
-    "Optimize radio-telescope array positioning in the Karoo for deep-space signals.",
-    "Analyze orbital debris trajectories to protect African cubesats.",
-    "Expert Protocol: Design a lunar-based relay for inter-continental solar research."
-  ],
-  'economics': [
-    "Simulate the impact of Pan-African digital currency on intra-continental trade.",
-    "Architect a micro-insurance mesh for small-holder farmers using blockchain.",
-    "Expert Protocol: Design a decentralized liquidity pool for urban infrastructure bonds."
-  ],
-  'energy': [
-    "Scale modular molten-salt batteries for off-grid industrial zones.",
-    "Develop AI dispatchers for national smart-grids handling intermittent wind power.",
-    "Expert Protocol: Engineer a fusion-lite experimental reactor for a regional hub."
-  ],
-  'marine-bio': [
-    "Deploy bio-acoustic sensors to track humpback whale migration off Gabon.",
-    "Design automated coral-restoration bots for the Indian Ocean reefs.",
-    "Expert Protocol: Map deep-sea hydrothermal vents for sustainable geothermal potential."
-  ],
-  'cyber-ops': [
-    "Neutralize a brute-force assault on the Ethiopian power grid nodes.",
-    "Implement zero-trust architecture for rural e-government portals.",
-    "Expert Protocol: Deploy an AI-sentinel to monitor sub-sea cable integrity."
-  ],
-  'nanotech': [
-    "Engineer nano-coatings to protect Sahelian solar arrays from sand abrasion.",
-    "Develop molecular filters for heavy-metal extraction in artisanal mining zones.",
-    "Expert Protocol: Synthesize graphene-based membranes for low-energy water purification."
-  ]
-};
+const MISSION_TITLES = ["Alpha Sync", "Beta Logic", "Gamma Mesh", "Delta Protocol", "Epsilon Core", "Zeta Uplink", "Eta Node", "Theta Pulse", "Iota Stream", "Sigma Secure"];
 
+// Generate 5 missions for each of the 15 phases for all 17 worlds
+// Total missions = 17 * 15 * 5 = 1275 missions
 export const MISSIONS: Mission[] = WORLDS.flatMap((world, wIdx) => {
-  return Array.from({ length: 10 }).map((_, mIdx) => {
-    const difficulty = mIdx < 4 ? 'Medium' : mIdx < 7 ? 'Hard' : 'Expert';
-    const xp = (difficulty === 'Medium' ? 800 : difficulty === 'Hard' ? 1600 : 2500) + (mIdx * 50);
-    const worldScenarios = REAL_WORLD_SCENARIOS[world.id];
-    let story = `Simulating Sector ${world.subject} challenge ${mIdx + 1}. Resolve regional technical bottlenecks.`;
-    let title = `${world.title} // Mod 0${mIdx + 1}`;
-    if (worldScenarios) {
-      const scenarioIdx = difficulty === 'Medium' ? 0 : difficulty === 'Hard' ? 1 : 2;
-      story = worldScenarios[scenarioIdx];
-      title = ["Alpha Sync", "Beta Logic", "Gamma Mesh", "Delta Protocol", "Epsilon Core", "Zeta Uplink", "Eta Node", "Theta Pulse", "Iota Stream", "Sigma Secure"][mIdx];
-    }
-    return {
-      id: (wIdx * 1000) + mIdx + 1,
-      worldId: world.id,
-      title,
-      story,
-      difficulty: difficulty as 'Medium' | 'Hard' | 'Expert',
-      xp,
-      locked: mIdx > 0, 
-      bgGradient: world.gradient,
-      completed: false,
-      environment: `High-fidelity ${world.subject} tactical simulation.`,
-      type: (mIdx % 2 === 0) ? 'Rhythm' : 'Data-Stream'
-    };
+  return Array.from({ length: 15 }).flatMap((_, pIdx) => {
+    return Array.from({ length: 5 }).map((__, mIdx) => {
+      const globalMissionIdx = (pIdx * 5) + mIdx;
+      const difficulty = pIdx < 5 ? 'Medium' : pIdx < 10 ? 'Hard' : 'Expert';
+      const xpBase = difficulty === 'Medium' ? 800 : difficulty === 'Hard' ? 1600 : 2500;
+      
+      return {
+        id: (wIdx * 10000) + (pIdx * 100) + mIdx + 1,
+        worldId: world.id,
+        title: `${MISSION_TITLES[globalMissionIdx % 10]} Mod-0${mIdx + 1}`,
+        story: `Sector intelligence indicates tactical bottleneck at Phase ${pIdx + 1}, Tier ${mIdx + 1}. Resolve the ${world.subject} anomaly to ensure regional mesh stability.`,
+        difficulty: difficulty as 'Medium' | 'Hard' | 'Expert',
+        xp: xpBase + (pIdx * 100) + (mIdx * 50),
+        locked: pIdx > 0 || mIdx > 0,
+        bgGradient: world.gradient,
+        completed: false,
+        environment: `High-fidelity ${world.subject} tactical simulation Phase ${pIdx + 1}.`,
+        type: (mIdx % 2 === 0) ? 'Rhythm' : 'Data-Stream'
+      };
+    });
   });
 });
 
 export const CHAPTER_MISSION_IDS: Record<string, number[]> = MISSIONS.reduce((acc, mission) => {
-  const chapterId = `${mission.worldId}-c1`;
+  // Determine which phase this mission belongs to
+  const phaseIdx = Math.floor((mission.id % 10000) / 100);
+  const chapterId = `${mission.worldId}-p${phaseIdx + 1}`;
   if (!acc[chapterId]) acc[chapterId] = [];
   acc[chapterId].push(mission.id);
   return acc;
