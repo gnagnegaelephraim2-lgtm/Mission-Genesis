@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { GoogleGenAI, Modality } from "@google/genai";
 import { TabType, World, Chapter, Mission, Player, NeuralSignal, GlobalMesh } from './types';
@@ -19,15 +20,15 @@ import {
   User, 
   Zap, 
   ChevronLeft,
-  Activity,
-  Share2,
-  CheckCircle2,
   Cpu,
   VolumeX,
   Music4,
   Users,
-  Volume2,
-  Headphones
+  SkipForward,
+  SkipBack,
+  Headphones,
+  ListMusic,
+  X
 } from 'lucide-react';
 
 const SYNC_ENDPOINT = `https://jsonblob.com/api/jsonBlob/1344400262145327104`;
@@ -72,10 +73,10 @@ const App: React.FC = () => {
   const [notification, setNotification] = useState<{message: string, type: 'info' | 'success'} | null>(null);
   const [isAudioActive, setIsAudioActive] = useState(false);
   const [trackId, setTrackId] = useState(1); 
+  const [showPlaylist, setShowPlaylist] = useState(false);
   
   const audioContextRef = useRef<AudioContext | null>(null);
   const sequencerIntervalRef = useRef<number | null>(null);
-  const trackTimerRef = useRef<number | null>(null);
   const activeNodesRef = useRef<AudioNode[]>([]);
   const welcomePlayedRef = useRef(false);
 
@@ -145,9 +146,7 @@ const App: React.FC = () => {
 
   const stopAudio = useCallback(() => {
     if (sequencerIntervalRef.current) clearInterval(sequencerIntervalRef.current);
-    if (trackTimerRef.current) window.clearTimeout(trackTimerRef.current);
     sequencerIntervalRef.current = null;
-    trackTimerRef.current = null;
     activeNodesRef.current.forEach(node => { try { (node as any).stop(); } catch (e) {} });
     activeNodesRef.current = [];
   }, []);
@@ -186,34 +185,47 @@ const App: React.FC = () => {
     }
   }, [getAudioContext]);
 
+  /**
+   * Procedural Rap Instrumentals
+   * Each seed generates a unique BPM, Drum Pattern, Bassline, and Hi-Hat Groove.
+   */
   const startProceduralRap = useCallback((seed: number) => {
     const ctx = getAudioContext();
     if (ctx.state === 'suspended') ctx.resume();
 
+    // Kill existing nodes
     activeNodesRef.current.forEach(node => { try { (node as any).stop(); } catch (e) {} });
     activeNodesRef.current = [];
     if (sequencerIntervalRef.current) clearInterval(sequencerIntervalRef.current);
 
-    const bpm = 92 + (seed % 10); // Standard chill rap BPM
+    // BPM varies between 85 and 130 depending on seed
+    const bpm = 85 + ((seed * 7) % 45); 
     const secondsPerBeat = 60 / bpm;
     const subdivision = secondsPerBeat / 4; // 16th notes
     let currentStep = 0;
 
-    // Harmonic Minor / Phrygian for dark rap vibes
-    const scales = [
-      [32.70, 34.65, 38.89, 43.65], // C Phrygian Low
-      [36.71, 38.89, 43.65, 48.99], // D Phrygian Low
-      [41.20, 43.65, 48.99, 55.00], // E Phrygian Low
+    // Define unique scales per seed
+    const rootFreqs = [32.70, 34.65, 36.71, 38.89, 41.20, 43.65, 48.99, 51.91];
+    const root = rootFreqs[seed % rootFreqs.length];
+    const scaleTypes = [
+      [1, 1.25, 1.5, 1.75], // Majorish
+      [1, 1.18, 1.5, 1.68], // Minorish
+      [1, 1.06, 1.41, 1.58], // Phrygian/Dark
+      [1, 1.33, 1.5, 2.0],   // Suspended
     ];
-    const bassScale = scales[seed % scales.length];
+    const baseScale = scaleTypes[seed % scaleTypes.length].map(v => root * v);
     
-    const playKick = (time: number) => {
+    // Drum Style: 0 = Boom Bap (Lazy), 1 = Trap (Fast), 2 = Industrial (Hard), 3 = Lo-fi (Soft)
+    const drumStyle = seed % 4;
+    const hiHatSwing = (seed % 10) / 100; // Micro-variation for groove
+
+    const playKick = (time: number, accent = 1.0) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(150, time);
+      osc.frequency.setValueAtTime(180, time);
       osc.frequency.exponentialRampToValueAtTime(40, time + 0.15);
-      gain.gain.setValueAtTime(0.3, time);
+      gain.gain.setValueAtTime(0.4 * accent, time);
       gain.gain.exponentialRampToValueAtTime(0.001, time + 0.2);
       osc.connect(gain);
       gain.connect(ctx.destination);
@@ -221,22 +233,19 @@ const App: React.FC = () => {
       osc.stop(time + 0.2);
     };
 
-    const playSnare = (time: number) => {
+    const playSnare = (time: number, accent = 1.0) => {
       const noise = ctx.createBufferSource();
-      const bufferSize = ctx.sampleRate * 0.1;
+      const bufferSize = ctx.sampleRate * 0.12;
       const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
       const data = buffer.getChannelData(0);
-      for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+      for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * accent;
       noise.buffer = buffer;
-
       const filter = ctx.createBiquadFilter();
       filter.type = 'highpass';
-      filter.frequency.setValueAtTime(1200, time);
-      
+      filter.frequency.setValueAtTime(drumStyle === 3 ? 1800 : 1200, time);
       const gain = ctx.createGain();
-      gain.gain.setValueAtTime(0.15, time);
+      gain.gain.setValueAtTime(drumStyle === 3 ? 0.1 : 0.2, time);
       gain.gain.exponentialRampToValueAtTime(0.001, time + 0.15);
-      
       noise.connect(filter);
       filter.connect(gain);
       gain.connect(ctx.destination);
@@ -247,59 +256,96 @@ const App: React.FC = () => {
     const playHiHat = (time: number, accent = false) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = 'square';
-      osc.frequency.setValueAtTime(10000, time);
-      gain.gain.setValueAtTime(accent ? 0.04 : 0.02, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
+      osc.type = drumStyle === 2 ? 'sawtooth' : 'square';
+      osc.frequency.setValueAtTime(12000, time);
+      gain.gain.setValueAtTime(accent ? 0.05 : 0.02, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.04);
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start(time);
       osc.stop(time + 0.05);
     };
 
-    const playSubBass = (time: number, freq: number) => {
+    const playSubBass = (time: number, freq: number, length: number) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(freq, time);
       gain.gain.setValueAtTime(0, time);
-      gain.gain.linearRampToValueAtTime(0.15, time + 0.05);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + secondsPerBeat * 0.8);
+      gain.gain.linearRampToValueAtTime(0.2, time + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + length);
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start(time);
-      osc.stop(time + secondsPerBeat);
+      osc.stop(time + length);
       activeNodesRef.current.push(osc);
     };
 
     sequencerIntervalRef.current = window.setInterval(() => {
       const startTime = ctx.currentTime + 0.05;
       
-      // Drum Pattern (Boom Bap / Trap hybrid)
-      if (currentStep % 16 === 0 || currentStep % 16 === 10) playKick(startTime);
-      if (currentStep % 16 === 8) playSnare(startTime);
-      if (currentStep % 2 === 0) playHiHat(startTime, currentStep % 4 === 0);
+      // Kick Patterns
+      const kickPattern = seed % 3 === 0 ? [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0] : [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0];
+      if (kickPattern[currentStep % 16]) playKick(startTime, currentStep % 16 === 0 ? 1.2 : 1.0);
 
-      // Bassline logic
-      if (currentStep % 8 === 0) {
-        const note = bassScale[Math.floor((seed + currentStep) % 4)];
-        playSubBass(startTime, note);
+      // Snare Patterns
+      if (currentStep % 16 === 8) playSnare(startTime);
+      if (drumStyle === 1 && currentStep % 16 === 14 && (seed % 5 === 0)) playSnare(startTime, 0.5); // Ghost snare for Trap
+
+      // Hi-Hat Logic
+      const hiHatDensity = (seed % 4) === 0 ? 2 : (seed % 4) === 1 ? 4 : 1; 
+      if (currentStep % hiHatDensity === 0) {
+        const swungTime = startTime + (currentStep % 2 === 1 ? hiHatSwing : 0);
+        playHiHat(swungTime, currentStep % 4 === 0);
+      }
+
+      // Bassline Logic - Randomized but seed-consistent
+      const bassTriggers = [0, 6, 10, 13];
+      if (bassTriggers.includes(currentStep % 16)) {
+        const noteIdx = (Math.floor(currentStep / 16) + (seed % 4)) % baseScale.length;
+        const note = baseScale[noteIdx];
+        playSubBass(startTime, note, secondsPerBeat * (seed % 2 === 0 ? 1 : 0.5));
       }
       
       currentStep++;
     }, subdivision * 1000);
   }, [getAudioContext]);
 
-  const cycleTrack = useCallback(() => {
+  const handleNextBeat = useCallback(() => {
     const nextTrack = (trackId % 1000) + 1;
     setTrackId(nextTrack);
-    startProceduralRap(nextTrack - 1); 
-    notify(`RAP ROTATION: BEAT #${formatTrackNum(nextTrack)}`, "info");
+    playInteractionSFX(1000, 'square', 0.1, 0.03);
+    if (isAudioActive) {
+      startProceduralRap(nextTrack - 1);
+      notify(`UPLINK ADVANCED: BEAT #${formatTrackNum(nextTrack)}`, "info");
+    } else {
+      notify(`QUEUE UPDATED: BEAT #${formatTrackNum(nextTrack)}`, "info");
+    }
+  }, [trackId, isAudioActive, startProceduralRap, playInteractionSFX]);
 
-    const nextInterval = 20000; 
-    if (trackTimerRef.current) window.clearTimeout(trackTimerRef.current);
-    trackTimerRef.current = window.setTimeout(cycleTrack, nextInterval);
-  }, [trackId, startProceduralRap]);
+  const handlePrevBeat = useCallback(() => {
+    const prevTrack = trackId === 1 ? 1000 : trackId - 1;
+    setTrackId(prevTrack);
+    playInteractionSFX(600, 'square', 0.1, 0.03);
+    if (isAudioActive) {
+      startProceduralRap(prevTrack - 1);
+      notify(`UPLINK REVERSED: BEAT #${formatTrackNum(prevTrack)}`, "info");
+    } else {
+      notify(`QUEUE UPDATED: BEAT #${formatTrackNum(prevTrack)}`, "info");
+    }
+  }, [trackId, isAudioActive, startProceduralRap, playInteractionSFX]);
+
+  const jumpToTrack = useCallback((id: number) => {
+    setTrackId(id);
+    setShowPlaylist(false);
+    playInteractionSFX(1200, 'sine', 0.2, 0.05);
+    if (isAudioActive) {
+      startProceduralRap(id - 1);
+      notify(`SYNCED TO BEAT #${formatTrackNum(id)}`, "info");
+    } else {
+      notify(`TRACK QUEUED: BEAT #${formatTrackNum(id)}`, "info");
+    }
+  }, [isAudioActive, startProceduralRap, playInteractionSFX]);
 
   const toggleAudio = () => {
     if (isAudioActive) {
@@ -310,11 +356,6 @@ const App: React.FC = () => {
       setIsAudioActive(true);
       startProceduralRap(trackId - 1);
       notify(`RAP UPLINK: BEAT #${formatTrackNum(trackId)}`, "info");
-      
-      const nextInterval = 20000; 
-      if (trackTimerRef.current) window.clearTimeout(trackTimerRef.current);
-      trackTimerRef.current = window.setTimeout(cycleTrack, nextInterval);
-
       playInteractionSFX(800, 'square', 0.15, 0.04);
     }
   };
@@ -471,14 +512,38 @@ const App: React.FC = () => {
                   <span className="font-tactical text-xs font-black text-amber-500">{userXp.toLocaleString()} XP • LVL {userLevel}</span>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <button 
-                  onClick={toggleAudio}
-                  className={`p-2.5 border rounded-xl transition-all shadow-lg flex items-center gap-2 active:scale-95 ${isAudioActive ? 'bg-amber-500 text-slate-950 border-amber-600' : 'bg-slate-900/60 border-slate-700 text-slate-500'}`}
-                >
-                  {isAudioActive ? <Headphones size={20} className="animate-pulse" /> : <VolumeX size={20} />}
-                  <span className="hidden lg:inline text-[9px] font-tactical font-black uppercase tracking-widest">{isAudioActive ? `RAP #${formatTrackNum(trackId)}` : 'UPLINK OFF'}</span>
-                </button>
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="flex items-center bg-slate-900/60 border border-slate-700 rounded-xl overflow-hidden shadow-lg">
+                  <button 
+                    onClick={handlePrevBeat}
+                    className="p-2.5 text-slate-500 hover:text-amber-500 transition-all active:scale-95 border-r border-slate-800"
+                    title="Previous Beat"
+                  >
+                    <SkipBack size={20} />
+                  </button>
+                  <button 
+                    onClick={toggleAudio}
+                    className={`p-2.5 transition-all flex items-center gap-2 active:scale-95 ${isAudioActive ? 'bg-amber-500 text-slate-950 border-x border-amber-600' : 'text-slate-500 hover:text-slate-300 border-x border-slate-800'}`}
+                  >
+                    {isAudioActive ? <Headphones size={20} className="animate-pulse" /> : <VolumeX size={20} />}
+                    <span className="hidden lg:inline text-[9px] font-tactical font-black uppercase tracking-widest">{isAudioActive ? `BEAT #${formatTrackNum(trackId)}` : 'OFF'}</span>
+                  </button>
+                  <button 
+                    onClick={handleNextBeat}
+                    className="p-2.5 text-slate-500 hover:text-amber-500 transition-all active:scale-95 border-r border-slate-800"
+                    title="Next Beat"
+                  >
+                    <SkipForward size={20} />
+                  </button>
+                  <button 
+                    onClick={() => { setShowPlaylist(true); playInteractionSFX(800, 'sine', 0.1, 0.03); }}
+                    className={`p-2.5 transition-all active:scale-95 ${showPlaylist ? 'text-amber-500' : 'text-slate-500 hover:text-white'}`}
+                    title="Open Playlist"
+                  >
+                    <ListMusic size={20} />
+                  </button>
+                </div>
+
                 <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-[9px] font-tactical font-black uppercase tracking-widest">
                    <Cpu size={10} className={isSyncing ? 'animate-spin' : ''} />
                    SECURE LINK: STABLE
@@ -532,6 +597,55 @@ const App: React.FC = () => {
           </nav>
         )}
       </div>
+
+      {/* BEAT PLAYLIST DRAWER */}
+      {showPlaylist && (
+        <div className="fixed inset-0 z-[100] flex justify-end">
+           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in" onClick={() => setShowPlaylist(false)}></div>
+           <div className="relative w-full max-w-md h-full bg-slate-950 border-l border-slate-800 flex flex-col animate-in slide-in-from-right duration-500">
+              <div className="p-8 border-b border-slate-800 flex items-center justify-between bg-slate-950/80 backdrop-blur-md sticky top-0 z-20">
+                 <div className="flex items-center gap-4">
+                    <Music4 size={28} className="text-amber-500" />
+                    <div className="text-left">
+                       <h3 className="text-2xl font-tactical font-black text-white italic uppercase tracking-tighter">BEAT GRID</h3>
+                       <p className="text-[9px] font-tactical font-black text-slate-500 tracking-widest uppercase italic">1000 Procedural Uplinks</p>
+                    </div>
+                 </div>
+                 <button onClick={() => setShowPlaylist(false)} className="p-3 bg-slate-900 border border-slate-800 rounded-2xl text-slate-500 hover:text-white transition-all active:scale-95">
+                    <X size={24} />
+                 </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6 grid grid-cols-4 gap-3 custom-scrollbar">
+                 {Array.from({ length: 1000 }).map((_, i) => {
+                   const id = i + 1;
+                   const isCurrent = id === trackId;
+                   return (
+                     <button
+                       key={id}
+                       onClick={() => jumpToTrack(id)}
+                       className={`aspect-square rounded-xl border flex flex-col items-center justify-center transition-all group ${
+                         isCurrent 
+                         ? 'bg-amber-500 border-amber-400 text-slate-950 shadow-[0_0_15px_rgba(245,158,11,0.4)]' 
+                         : 'bg-slate-900/40 border-slate-800 text-slate-500 hover:border-amber-500/40 hover:text-white'
+                       }`}
+                     >
+                       <span className="text-[8px] font-tactical font-black uppercase opacity-60">BT</span>
+                       <span className="text-sm font-tactical font-black italic">{id}</span>
+                     </button>
+                   );
+                 })}
+              </div>
+
+              <div className="p-8 border-t border-slate-800 bg-slate-950 text-center">
+                 <p className="text-[10px] font-tactical font-black text-slate-600 uppercase tracking-widest leading-relaxed italic">
+                    Sequential neural sync initialized. Select any node to immediately recalibrate the procedural uplift.
+                 </p>
+              </div>
+           </div>
+        </div>
+      )}
+
       {notification && (
         <div className={`fixed top-24 left-1/2 -translate-x-1/2 px-6 py-3 rounded-2xl border backdrop-blur-xl z-[100] animate-in slide-in-from-top-4 ${notification.type === 'success' ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400' : 'bg-amber-500/20 border-amber-500/40 text-amber-500'}`}>
            <span className="font-tactical font-black text-xs uppercase tracking-widest">{notification.message}</span>

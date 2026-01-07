@@ -1,3 +1,4 @@
+
 import { World, Chapter, Mission, Opportunity, Player, SkillProgress } from './types';
 
 export const WORLDS: World[] = [
@@ -16,6 +17,8 @@ export const WORLDS: World[] = [
   { id: 'economics', subject: 'ECON', title: "Wealth Flow", progress: 0, gradient: 'from-emerald-500 to-teal-800', icon: '📊', color: '#10b981' },
   { id: 'energy', subject: 'ENERGY', title: "Volt Pulse", progress: 0, gradient: 'from-yellow-400 to-orange-900', icon: '🔋', color: '#fbbf24' },
   { id: 'marine-bio', subject: 'MARINE', title: "Abyssal Reef", progress: 0, gradient: 'from-blue-400 to-indigo-900', icon: '🐙', color: '#38bdf8' },
+  { id: 'cyber-ops', subject: 'CYBER', title: "Sentinel Mesh", progress: 0, gradient: 'from-red-600 to-slate-950', icon: '🛡️', color: '#dc2626' },
+  { id: 'nanotech', subject: 'NANO', title: "Atomic Sahel", progress: 0, gradient: 'from-fuchsia-600 to-purple-900', icon: '💎', color: '#d946ef' },
 ];
 
 export const CHAPTERS: Record<string, Chapter[]> = WORLDS.reduce((acc, world) => {
@@ -73,6 +76,16 @@ const REAL_WORLD_SCENARIOS: Record<string, string[]> = {
     "Deploy bio-acoustic sensors to track humpback whale migration off Gabon.",
     "Design automated coral-restoration bots for the Indian Ocean reefs.",
     "Expert Protocol: Map deep-sea hydrothermal vents for sustainable geothermal potential."
+  ],
+  'cyber-ops': [
+    "Neutralize a brute-force assault on the Ethiopian power grid nodes.",
+    "Implement zero-trust architecture for rural e-government portals.",
+    "Expert Protocol: Deploy an AI-sentinel to monitor sub-sea cable integrity."
+  ],
+  'nanotech': [
+    "Engineer nano-coatings to protect Sahelian solar arrays from sand abrasion.",
+    "Develop molecular filters for heavy-metal extraction in artisanal mining zones.",
+    "Expert Protocol: Synthesize graphene-based membranes for low-energy water purification."
   ]
 };
 
@@ -112,25 +125,18 @@ export const CHAPTER_MISSION_IDS: Record<string, number[]> = MISSIONS.reduce((ac
 }, {} as Record<string, number[]>);
 
 export const OPPORTUNITIES: Opportunity[] = [
-  // --- PRIORITY PATHWAYS ---
   { id: 1, name: "ALU", category: 'University', description: "African Leadership University - Leadership training in STEM and social impact.", logo: "🎓", recommended: true, url: "https://www.alueducation.com/" },
   { id: 2, name: "ALX Africa", category: 'Training', description: "Software engineering and data science training for Africa's top talent.", logo: "💻", recommended: true, url: "https://www.alxafrica.com/" },
   { id: 3, name: "Dell Young Leaders", category: 'Fellowship', description: "Support for high-potential students from low-income backgrounds.", logo: "💻", recommended: true, url: "https://www.dellyoungleaders.org/" },
   { id: 4, name: "Fulbright Africa", category: 'Fellowship', description: "Educational exchange program between Africa and the USA.", logo: "🗽", recommended: true, url: "https://fulbrightscholars.org/what-fulbright/opportunities" },
   { id: 5, name: "UCT Program", category: 'University', description: "University of Cape Town - Africa's highest-ranked research university.", logo: "🏗️", recommended: true, url: "https://www.uct.ac.za/" },
-
-  // --- UNIVERSITIES ---
   { id: 101, name: "Makerere University", category: 'University', description: "Uganda's historical giant in medicine and social research.", logo: "🇺🇬", recommended: true, url: "https://www.mak.ac.ug/" },
   { id: 102, name: "University of Lagos", category: 'University', description: "Nigeria's hub for creative and tech-enabled business.", logo: "🇳🇬", recommended: true, url: "https://unilag.edu.ng/" },
   { id: 103, name: "University of Nairobi", category: 'University', description: "Kenya's leading institution for architectural and medical research.", logo: "🇰🇪", recommended: true, url: "https://uonbi.ac.ke/" },
   { id: 104, name: "Wits University", category: 'University', description: "Global leader in deep-level mining and tech innovation.", logo: "💎", recommended: true, url: "https://www.wits.ac.za/" },
   { id: 105, name: "Ashesi University", category: 'University', description: "Cultivating ethical leadership and critical thinking in Ghana.", logo: "🦁", recommended: true, url: "https://www.ashesi.edu.gh/" },
-
-  // --- FELLOWSHIPS ---
   { id: 201, name: "Mandela Rhodes", category: 'Fellowship', description: "Building exceptional leadership capacity in African graduates.", logo: "🦁", recommended: true, url: "https://mandelarhodes.org/" },
   { id: 202, name: "Mastercard Scholars", category: 'Fellowship', description: "Full scholarships for transformative leaders across Africa.", logo: "🤝", recommended: true, url: "https://mastercardfdn.org/" },
-
-  // --- TRAINING HUBS ---
   { id: 301, name: "Moringa School", category: 'Training', description: "Market-aligned software engineering training in Kenya.", logo: "🌳", recommended: true, url: "https://moringaschool.com/" },
   { id: 330, name: "Zindi AI", category: 'Training', description: "The leading AI competition platform for Africa.", logo: "🏁", recommended: true, url: "https://zindi.africa/" },
   { id: 331, name: "Data Science Nigeria", category: 'Training', description: "Building a world-class AI ecosystem for impact.", logo: "🤖", recommended: true, url: "https://www.datasciencenigeria.org/" }
