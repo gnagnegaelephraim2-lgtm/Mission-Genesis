@@ -9,9 +9,10 @@ interface HomeScreenProps {
   signals?: NeuralSignal[];
   onSelectWorld: (world: World) => void;
   isSyncing?: boolean;
+  theme?: string;
 }
 
-const HomeScreen: React.FC<HomeScreenProps> = ({ completedMissions, signals = [], onSelectWorld, isSyncing = false }) => {
+const HomeScreen: React.FC<HomeScreenProps> = ({ completedMissions, signals = [], onSelectWorld, isSyncing = false, theme = 'dark' }) => {
   const getProgress = (worldId: string) => {
     const worldMissions = MISSIONS.filter(m => m.worldId === worldId);
     if (worldMissions.length === 0) return 0;
@@ -23,7 +24,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ completedMissions, signals = []
     return MISSIONS.filter(m => m.worldId === worldId);
   };
 
-  // COMBINE LIVE SIGNALS WITH STRATEGIC INTELLIGENCE FALLBACKS
   const displaySignals = useMemo(() => {
     const fallbacks: NeuralSignal[] = [
       { id: 'st1', commander: 'Genesis HQ', action: 'Analyzing sector data nodes...', timestamp: Date.now() },
@@ -31,16 +31,13 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ completedMissions, signals = []
       { id: 'st3', commander: 'Echo Node', action: 'New opportunities identified in Bio-Sustain.', timestamp: Date.now() },
       { id: 'st4', commander: 'System', action: 'Operational readiness maintained at Level 4.', timestamp: Date.now() }
     ];
-    
-    // Combine live signals with fallbacks to ensure constant movement
     return [...signals, ...fallbacks].sort((a, b) => b.timestamp - a.timestamp).slice(0, 10);
   }, [signals]);
 
   return (
     <div className="p-4 sm:p-6 md:p-10 scanlines">
-      {/* NEURAL MESH BROADCAST TICKER */}
-      <div className="mb-8 relative overflow-hidden bg-slate-900/40 border-y border-amber-500/20 py-2 sm:py-3 group shadow-lg">
-         <div className="flex items-center absolute left-0 top-0 bottom-0 bg-slate-950 z-20 px-3 md:px-6 border-r border-amber-500/30">
+      <div className={`mb-8 relative overflow-hidden border-y py-2 sm:py-3 group shadow-lg ${theme === 'dark' ? 'bg-slate-900/40 border-amber-500/20' : 'bg-slate-100 border-slate-400/50'}`}>
+         <div className={`flex items-center absolute left-0 top-0 bottom-0 z-20 px-3 md:px-6 border-r ${theme === 'dark' ? 'bg-slate-950 border-amber-500/30' : 'bg-slate-200 border-slate-400'}`}>
             {isSyncing ? (
               <Loader2 size={14} className="text-amber-500 animate-spin mr-2" />
             ) : (
@@ -50,19 +47,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ completedMissions, signals = []
          </div>
          <div className="flex gap-16 animate-[ticker-scroll_40s_linear_infinite] whitespace-nowrap pl-[150px] md:pl-[220px]">
             {displaySignals.map((sig) => (
-              <div key={sig.id} className="flex items-center gap-3 text-slate-400 font-mono text-[10px] uppercase">
+              <div key={sig.id} className={`flex items-center gap-3 font-mono text-[10px] uppercase ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
                  <Activity size={10} className="text-emerald-500" />
-                 <span className="text-white font-bold group-hover:text-amber-500 transition-colors">{sig.commander}</span>
+                 <span className={`${theme === 'dark' ? 'text-white' : 'text-slate-900'} font-bold group-hover:text-amber-500 transition-colors`}>{sig.commander}</span>
                  <span className="opacity-60">{sig.action}</span>
-                 <span className="text-[8px] text-slate-600 font-bold">[{new Date(sig.timestamp).toLocaleTimeString()}]</span>
-              </div>
-            ))}
-            {/* Loop duplication */}
-            {displaySignals.map((sig) => (
-              <div key={sig.id + '-loop'} className="flex items-center gap-3 text-slate-400 font-mono text-[10px] uppercase">
-                 <Activity size={10} className="text-emerald-500" />
-                 <span className="text-white font-bold group-hover:text-amber-500 transition-colors">{sig.commander}</span>
-                 <span className="opacity-60">{sig.action}</span>
+                 <span className="text-[8px] text-slate-500 font-bold">[{new Date(sig.timestamp).toLocaleTimeString()}]</span>
               </div>
             ))}
          </div>
@@ -70,10 +59,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ completedMissions, signals = []
 
       <div className="mb-10 relative text-left">
         <div className="absolute -left-6 md:-left-10 top-1/2 -translate-y-1/2 w-1.5 h-16 bg-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.4)]"></div>
-        <h2 className="text-4xl md:text-5xl font-tactical font-black dark:text-white text-slate-900 tracking-tighter leading-none mb-3 glitch uppercase" data-text="GAME WORLDS">
+        <h2 className={`text-4xl md:text-5xl font-tactical font-black tracking-tighter leading-none mb-3 glitch uppercase ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`} data-text="GAME WORLDS">
           GAME WORLDS
         </h2>
-        <p className="text-slate-500 text-[11px] md:text-xs font-tactical font-bold uppercase tracking-[0.3em] italic">Operational Readiness: Level 4 // Global Sector Grid</p>
+        <p className={`${theme === 'dark' ? 'text-slate-500' : 'text-slate-700'} text-[11px] md:text-xs font-tactical font-bold uppercase tracking-[0.3em] italic`}>Operational Readiness: Level 4 // Global Sector Grid</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8 pb-20">

@@ -245,7 +245,7 @@ const App: React.FC = () => {
         case 'challenges':
           return <ChallengeScreen world={current.props.world} completedMissions={completedMissions} onBack={() => setNavigationStack(navigationStack.slice(0, -1))} onSelectChapter={(chapter) => setNavigationStack([...navigationStack, { screen: 'missions', props: { chapter } }])} />;
         case 'missions':
-          return <MissionsScreen chapter={current.props.chapter} completedMissions={completedMissions} onBack={() => setNavigationStack(navigationStack.slice(0, -1))} onSelectMission={(mission) => setNavigationStack([...navigationStack, { screen: 'missionDetail', props: { mission } }])} />;
+          return < MissionsScreen chapter={current.props.chapter} completedMissions={completedMissions} onBack={() => setNavigationStack(navigationStack.slice(0, -1))} onSelectMission={(mission) => setNavigationStack([...navigationStack, { screen: 'missionDetail', props: { mission } }])} theme={theme} />;
         case 'missionDetail':
           return <MissionDetailScreen mission={current.props.mission} isCompleted={completedMissions.includes(current.props.mission.id)} onComplete={(id, worldId) => handleMissionComplete(id, worldId)} onBack={() => setNavigationStack(navigationStack.slice(0, -1))} onReturnToOps={() => setNavigationStack([])} />;
         default:
@@ -255,7 +255,7 @@ const App: React.FC = () => {
 
     switch (activeTab) {
       case 'home':
-        return <HomeScreen completedMissions={completedMissions} signals={globalMesh.signals} onSelectWorld={(world) => setNavigationStack([{ screen: 'challenges', props: { world } }])} isSyncing={isSyncing} />;
+        return <HomeScreen completedMissions={completedMissions} signals={globalMesh.signals} onSelectWorld={(world) => setNavigationStack([{ screen: 'challenges', props: { world } }])} isSyncing={isSyncing} theme={theme} />;
       case 'opportunities':
         return <OpportunitiesScreen />;
       case 'leaderboard':
@@ -263,53 +263,50 @@ const App: React.FC = () => {
       case 'profile':
         return <ProfileScreen userXp={userXp} userLevel={userLevel} userProfile={userProfile} onUpdateProfile={(p) => setUserProfile({ ...userProfile, ...p })} completedMissions={completedMissions} onLogout={handleLogout} onShareInvite={shareNeuralLink} />;
       default:
-        return <HomeScreen completedMissions={completedMissions} signals={globalMesh.signals} onSelectWorld={(world) => setNavigationStack([{ screen: 'challenges', props: { world } }])} isSyncing={isSyncing} />;
+        return <HomeScreen completedMissions={completedMissions} signals={globalMesh.signals} onSelectWorld={(world) => setNavigationStack([{ screen: 'challenges', props: { world } }])} isSyncing={isSyncing} theme={theme} />;
     }
   };
 
   return (
-    <div className={`flex justify-center h-screen w-screen overflow-hidden ${theme === 'dark' ? 'bg-slate-950 text-white' : 'bg-slate-100 text-slate-900'} transition-colors duration-500`}>
-      <div className={`w-full max-w-screen-xl h-screen flex flex-col relative border-x ${theme === 'dark' ? 'bg-slate-950 border-slate-800/50' : 'bg-white border-slate-200 shadow-2xl'}`}>
+    <div className={`flex justify-center h-screen w-screen overflow-hidden ${theme === 'dark' ? 'bg-slate-950 text-white' : 'bg-slate-300 text-slate-950'} transition-colors duration-500`}>
+      <div className={`w-full max-w-screen-xl h-screen flex flex-col relative border-x ${theme === 'dark' ? 'bg-slate-950 border-slate-800/50' : 'bg-slate-200 border-slate-400 shadow-2xl'}`}>
         
         <header className="px-6 pt-10 pb-4 flex items-center justify-between z-50 shrink-0">
           {isLoggedIn ? (
             <div className="flex w-full items-center justify-between">
               <div className="flex items-center gap-4">
                 {navigationStack.length > 0 && (
-                  <button onClick={() => setNavigationStack(navigationStack.slice(0, -1))} className="p-2 border rounded-xl bg-slate-800/50 border-slate-700 text-amber-500 hover:bg-slate-700 transition-all">
+                  <button onClick={() => setNavigationStack(navigationStack.slice(0, -1))} className={`p-2 border rounded-xl transition-all ${theme === 'dark' ? 'bg-slate-800/50 border-slate-700 text-amber-500' : 'bg-white border-slate-300 text-amber-600'}`}>
                     <ChevronLeft size={24} />
                   </button>
                 )}
-                <div className="px-4 py-2 rounded-2xl bg-slate-900 border border-amber-500/40 flex items-center gap-3 shadow-[0_0_20px_rgba(245,158,11,0.15)] group relative">
+                <div className={`px-4 py-2 rounded-2xl border flex items-center gap-3 shadow-lg group relative ${theme === 'dark' ? 'bg-slate-900 border-amber-500/40' : 'bg-white border-amber-500/60'}`}>
                   <Zap size={16} className={`text-amber-500 fill-amber-500 ${isSyncing ? 'animate-bounce' : 'animate-pulse'}`} />
-                  <span className="font-tactical text-xs md:text-sm font-black tracking-tighter text-amber-500">
+                  <span className={`font-tactical text-xs md:text-sm font-black tracking-tighter ${theme === 'dark' ? 'text-amber-500' : 'text-amber-600'}`}>
                     {userXp.toLocaleString()} XP • LVL {userLevel}
                   </span>
-                  {isSyncing && (
-                    <div className="absolute inset-0 bg-amber-500/20 rounded-2xl animate-ping pointer-events-none"></div>
-                  )}
                 </div>
               </div>
               
               <div className="flex items-center gap-3">
                 <button 
                   onClick={shareNeuralLink}
-                  className="hidden md:flex items-center gap-2 p-2.5 border rounded-xl bg-slate-800/50 border-slate-700 text-amber-500 hover:bg-slate-700 transition-all shadow-lg active:scale-95"
+                  className={`hidden md:flex items-center gap-2 p-2.5 border rounded-xl transition-all shadow-lg active:scale-95 ${theme === 'dark' ? 'bg-slate-800/50 border-slate-700 text-amber-500' : 'bg-white border-slate-300 text-amber-600'}`}
                   title="Invite Squad"
                 >
                   <Share2 size={20} />
                 </button>
                 <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-[9px] font-tactical font-black uppercase tracking-widest transition-all duration-500 ${
                   syncError 
-                  ? 'text-rose-500 border-rose-500/30 bg-rose-500/5' 
+                  ? 'text-rose-500 border-rose-500/30 bg-rose-500/5 shadow-[0_0_15px_rgba(244,63,94,0.1)]' 
                   : isSyncing 
                     ? 'text-amber-500 border-amber-500/30 bg-amber-500/5 animate-pulse' 
-                    : 'text-emerald-500 border-emerald-500/30 bg-emerald-500/5 shadow-[0_0_15px_rgba(16,185,129,0.1)]'
+                    : 'text-emerald-500 border-emerald-500/30 bg-emerald-500/5 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
                 }`}>
                   {syncError ? <WifiOff size={10} /> : <Wifi size={10} className={isSyncing ? 'animate-pulse' : ''} />}
-                  {syncError ? 'SUB-SPACE LINK' : isSyncing ? 'SYNCING...' : 'NEURAL MESH ACTIVE'}
+                  SUB-SPACE LINK: {syncError ? 'OFFLINE' : isSyncing ? 'SYNCING...' : 'ONLINE'}
                 </div>
-                <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="p-2.5 border rounded-xl dark:bg-slate-800/50 dark:border-slate-700 dark:text-slate-400 bg-white border-slate-200 text-slate-500 shadow-md">
+                <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className={`p-2.5 border rounded-xl transition-all shadow-md ${theme === 'dark' ? 'bg-slate-800/50 border-slate-700 text-slate-400' : 'bg-white border-slate-300 text-slate-600'}`}>
                   {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
                 </button>
               </div>
@@ -339,7 +336,7 @@ const App: React.FC = () => {
         )}
 
         {isLoggedIn && (
-          <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-3rem)] max-w-lg backdrop-blur-2xl border border-slate-700/50 bg-slate-900/80 rounded-3xl px-6 py-4 flex justify-between items-center z-50 shadow-3xl">
+          <nav className={`fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-3rem)] max-w-lg backdrop-blur-2xl border rounded-3xl px-6 py-4 flex justify-between items-center z-50 shadow-3xl ${theme === 'dark' ? 'border-slate-700/50 bg-slate-900/80' : 'border-slate-300 bg-white/90'}`}>
             {[
               { id: 'home', icon: Home, label: 'Ops' },
               { id: 'opportunities', icon: Briefcase, label: 'Growth' },
@@ -353,7 +350,7 @@ const App: React.FC = () => {
                   onClick={() => { setNavigationStack([]); setActiveTab(tab.id as TabType); }}
                   className={`flex flex-col items-center gap-1 flex-1 transition-all ${isActive ? 'text-amber-500' : 'text-slate-500'}`}
                 >
-                  <div className={`p-3 rounded-2xl transition-all ${isActive ? 'bg-amber-500 text-slate-950 shadow-[0_0_30px_rgba(245,158,11,0.6)] -translate-y-2' : 'hover:bg-slate-800/50'}`}>
+                  <div className={`p-3 rounded-2xl transition-all ${isActive ? 'bg-amber-500 text-slate-950 shadow-[0_0_30px_rgba(245,158,11,0.6)] -translate-y-2' : theme === 'dark' ? 'hover:bg-slate-800/50' : 'hover:bg-slate-100'}`}>
                     <tab.icon size={24} strokeWidth={isActive ? 3 : 2} />
                   </div>
                   <span className={`text-[10px] uppercase font-tactical font-black tracking-[0.2em] transition-opacity duration-300 ${isActive ? 'opacity-100' : 'opacity-0'}`}>
