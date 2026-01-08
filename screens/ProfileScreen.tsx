@@ -88,7 +88,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
           </div>
           
           {isEditing ? (
-            <div className="flex flex-col items-center gap-4 w-full max-w-sm">
+            <div className="flex flex-col items-center gap-4 w-full max-sm:max-w-xs">
               <div className="w-full relative group">
                 <input 
                   type="text" 
@@ -182,20 +182,22 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
           <h3 className="text-xs font-tactical font-black text-amber-500 uppercase tracking-widest italic">Skill Passport</h3>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-6 mb-12">
           {SKILLS.map((skill) => {
             const dynamicProgress = Math.min(Math.floor((completedMissions.length / 50) * 100), 100);
             return (
-              <div key={skill.skill} className="space-y-2">
-                <div className="flex justify-between items-end">
-                  <div className="flex items-center gap-2">
-                     <span className="text-xl">{skill.icon}</span>
-                     <span className="text-sm font-tactical font-black uppercase text-white">{skill.skill}</span>
+              <div key={skill.skill} className="space-y-3">
+                <div className="flex justify-between items-end px-1">
+                  <div className="flex items-center gap-3">
+                     <span className="text-xl filter drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]">{skill.icon}</span>
+                     <span className="text-[10px] sm:text-xs font-tactical font-black uppercase text-white tracking-widest">{skill.skill}</span>
                   </div>
-                  <span className="text-xs font-tactical font-bold text-slate-500">{dynamicProgress}%</span>
+                  <span className="text-[10px] font-tactical font-black text-slate-500 tracking-widest">{dynamicProgress}%</span>
                 </div>
-                <div className="h-2.5 w-full bg-slate-900 rounded-full overflow-hidden border border-slate-800">
-                  <div className="h-full bg-amber-500 transition-all duration-1000 shadow-[0_0_10px_rgba(245,158,11,0.5)]" style={{ width: `${dynamicProgress}%` }}></div>
+                <div className="h-2.5 w-full bg-slate-900/60 rounded-full overflow-hidden border border-slate-800 shadow-inner">
+                  <div className="h-full bg-amber-500 transition-all duration-1000 shadow-[0_0_15px_rgba(245,158,11,0.5)] relative" style={{ width: `${dynamicProgress}%` }}>
+                    <div className="absolute inset-0 shimmer opacity-30"></div>
+                  </div>
                 </div>
               </div>
             );
@@ -209,7 +211,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
             <h3 className="text-xs font-tactical font-black text-amber-500 uppercase tracking-widest italic">Tactical Achievements</h3>
           </div>
           
-          <div className="relative p-6 sm:p-8 border-2 border-dashed border-blue-500/20 rounded-[2.5rem] bg-slate-950/40">
+          <div className="relative p-6 sm:p-8 border-2 border-dashed border-blue-500/20 rounded-[2.5rem] bg-slate-950/40 shadow-inner">
             <div className="grid grid-cols-4 gap-4">
                {ACHIEVEMENTS.map((ach) => {
                  const isUnlocked = completedMissions.length >= ach.milestone;
@@ -217,7 +219,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
                  const isClaimable = isUnlocked && !isClaimed;
 
                  return (
-                   <div key={ach.id} className="relative">
+                   <div key={ach.id} className="relative group/ach">
                       <button 
                         disabled={!isClaimable}
                         onClick={() => onClaimAchievement(ach.id, ach.xpReward)}
@@ -225,43 +227,47 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
                           isClaimed 
                             ? 'bg-emerald-500/20 border border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]' 
                             : isUnlocked 
-                              ? 'bg-amber-500 shadow-[0_0_30px_rgba(245,158,11,0.5)] scale-105 border border-white z-10 animate-pulse' 
+                              ? 'bg-amber-500 shadow-[0_0_30px_rgba(245,158,11,0.6)] scale-105 border border-white z-10 animate-pulse' 
                               : 'bg-slate-900 border border-slate-800 opacity-20 scale-95 cursor-not-allowed grayscale'
                         }`}
                       >
-                         <div className="w-full h-full bg-slate-950 rounded-[14px] flex flex-col items-center justify-center gap-1">
+                         <div className="w-full h-full bg-slate-950 rounded-[14px] flex flex-col items-center justify-center gap-1 group-active:scale-90 transition-transform">
                            {isClaimed ? (
                              <CheckCircle2 size={24} className="text-emerald-500" />
                            ) : isUnlocked ? (
-                             <Trophy size={24} className="text-amber-500 animate-bounce" />
+                             <Trophy size={24} className="text-amber-500 animate-[bounce_1.5s_infinite]" />
                            ) : (
                              <ShieldCheck size={24} className="text-slate-700" />
                            )}
                          </div>
                          {isClaimable && (
-                           <div className="absolute inset-0 border-2 border-dashed border-cyan-400 rounded-2xl animate-[spin_10s_linear_infinite] pointer-events-none"></div>
+                           <div className="absolute inset-0 border-2 border-dashed border-cyan-400 rounded-2xl animate-[spin_8s_linear_infinite] pointer-events-none"></div>
                          )}
                       </button>
                       
                       {isClaimable && (
-                        <div className="absolute -top-2 -right-2 bg-amber-500 text-slate-950 text-[6px] font-black px-1.5 py-0.5 rounded-full shadow-lg z-20 animate-bounce">
+                        <div className="absolute -top-3 -right-3 bg-amber-500 text-slate-950 text-[7px] font-black px-2 py-0.5 rounded-full shadow-2xl z-20 animate-bounce ring-2 ring-slate-950">
                            +{ach.xpReward} XP
                         </div>
                       )}
+
+                      <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-slate-900 border border-slate-800 px-2 py-1 rounded-lg text-[7px] font-tactical font-black text-white whitespace-nowrap opacity-0 group-hover/ach:opacity-100 transition-opacity z-50 pointer-events-none tracking-widest uppercase">
+                        {isClaimed ? 'CLAIMED' : isUnlocked ? 'READY TO SYNC' : `LOCKED: ${ach.milestone} MISSIONS`}
+                      </div>
                    </div>
                  );
                })}
             </div>
           </div>
 
-          <div className="mt-6 p-4 bg-slate-900/60 border border-slate-800 rounded-2xl flex gap-4">
-             <div className="p-3 rounded-xl bg-amber-500/10 text-amber-500 shrink-0 h-fit">
-                <ShieldCheck size={18} />
+          <div className="mt-6 p-5 bg-slate-900/60 border border-slate-800 rounded-[2rem] flex gap-5 shadow-inner">
+             <div className="p-4 rounded-2xl bg-amber-500/10 text-amber-500 shrink-0 h-fit border border-amber-500/20">
+                <ShieldCheck size={20} className="animate-pulse" />
              </div>
              <div>
-                <h4 className="text-[10px] font-tactical font-black text-white uppercase tracking-widest mb-1">Commander Protocol</h4>
+                <h4 className="text-[11px] font-tactical font-black text-white uppercase tracking-widest mb-1.5 italic">Commander Recruitment Protocol</h4>
                 <p className="text-[9px] font-medium text-slate-500 uppercase leading-relaxed tracking-tighter italic">
-                   Unlock tactical rewards by reaching mission milestones. <span className="text-amber-500 underline font-black">Choice rewards</span> must be claimed manually via sync handshake.
+                   Unlock and claim <span className="text-amber-500 underline font-black">Strategic Rewards</span> by reaching mission milestones. Claimed XP directly increases your global neural rank.
                 </p>
              </div>
           </div>

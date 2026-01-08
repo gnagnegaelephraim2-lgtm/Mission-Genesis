@@ -21,7 +21,9 @@ import {
   Terminal,
   BrainCircuit,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  ArrowLeft,
+  FastForward
 } from 'lucide-react';
 
 interface MissionDetailScreenProps {
@@ -30,6 +32,7 @@ interface MissionDetailScreenProps {
   onComplete: (id: number, worldId: string) => void;
   onBack: () => void;
   onReturnToOps?: () => void;
+  onNextMission?: () => void;
 }
 
 interface Particle {
@@ -43,7 +46,7 @@ interface Particle {
   life: number;
 }
 
-const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({ mission, isCompleted, onComplete, onBack, onReturnToOps }) => {
+const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({ mission, isCompleted, onComplete, onBack, onReturnToOps, onNextMission }) => {
   const [status, setStatus] = useState<'idle' | 'decryption' | 'executing' | 'flash' | 'success'>('idle');
   const [progress, setProgress] = useState(0);
   const [rhythmNodes, setRhythmNodes] = useState<{ id: number, x: number, y: number, life: number, type: 'beat' | 'pulse' }[]>([]);
@@ -87,7 +90,6 @@ const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({ mission, isCo
     if (isCorrect) {
       setDecryptionFeedback({ correct: true, revealed: true });
       playSFX(1200, 'sine', 0.4, 0.1);
-      // Reward decays based on attempts: 500 -> 350 -> 200 -> 50...
       const decryptionBonus = Math.max(50, 500 - (attemptCount * 150));
       setScore(s => s + decryptionBonus); 
       setTimeout(() => setStatus('executing'), 2000);
@@ -202,7 +204,7 @@ const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({ mission, isCo
   }, [status, mission.id, mission.worldId, onComplete, playSFX]);
 
   const objectives = mission.objectives || [
-    `Authenticate Phase ${Math.floor(mission.id / 100) + 1} Credentials`,
+    `Authenticate Phase ${Math.floor(mission.id / 100) + 1} Tactical Credentials`,
     `Analyze Sector Intelligence Nodes`,
     `Synchronize Tactical Frequencies`,
     `Broadcast Secure Mesh Signal`
@@ -217,7 +219,7 @@ const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({ mission, isCo
           className="w-full h-full object-cover opacity-20 scale-105 transition-transform duration-[10s] hover:scale-125"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#010409] to-transparent"></div>
-        <div className="absolute bottom-4 sm:bottom-8 left-4 sm:left-8 right-4 sm:right-8">
+        <div className="absolute bottom-4 sm:bottom-8 left-4 sm:left-8 right-4 sm:left-8">
            <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3 flex-wrap">
               <div className={`px-3 py-1 sm:px-4 sm:py-1.5 rounded-xl font-tactical font-black text-[8px] sm:text-[10px] tracking-widest uppercase border ${isCompleted ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500' : 'bg-amber-500/10 border-amber-500/30 text-amber-500'}`}>
                 {isCompleted ? 'Node Secured' : 'Tactical Brief'}
@@ -273,9 +275,16 @@ const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({ mission, isCo
         )}
       </div>
 
-      {/* DECRYPTION ASSESSMENT OVERLAY */}
+      {/* ASSESSMENT & EXECUTION OVERLAYS */}
       {status === 'decryption' && mission.challenge && (
         <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-[#010409]/95 backdrop-blur-3xl p-4 sm:p-8 scanlines overflow-hidden animate-in fade-in duration-500">
+           <button 
+             onClick={() => setStatus('idle')}
+             className="absolute top-8 left-8 p-3 bg-slate-900/80 border border-amber-500/40 text-amber-500 rounded-xl hover:bg-amber-500 hover:text-slate-950 transition-all active:scale-90 shadow-2xl z-[210]"
+           >
+              <ArrowLeft size={24} strokeWidth={3} />
+           </button>
+
            <div className="w-full max-w-3xl relative p-6 sm:p-12 border border-slate-800 rounded-[2rem] sm:rounded-[4rem] bg-slate-950 shadow-3xl overflow-hidden">
               <div className="flex justify-between items-center mb-8">
                 <div className="flex items-center gap-3">
@@ -305,7 +314,7 @@ const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({ mission, isCo
                       className={`p-6 rounded-2xl border text-left font-tactical font-black text-[11px] sm:text-xs uppercase tracking-widest transition-all ${
                         isRevealed
                         ? isCorrect 
-                          ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' 
+                          ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.3)]' 
                           : 'bg-rose-500/10 border-rose-500/30 text-rose-500 opacity-50'
                         : 'bg-slate-900 border-slate-800 hover:border-amber-500 hover:bg-slate-800 text-slate-400 hover:text-white active:scale-95'
                       }`}
@@ -344,9 +353,14 @@ const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({ mission, isCo
         </div>
       )}
 
-      {/* RHYTHM GAME MODAL */}
       {status === 'executing' && (
         <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-[#010409] p-4 sm:p-8 scanlines overflow-hidden">
+          <button 
+             onClick={() => setStatus('idle')}
+             className="absolute top-8 left-8 p-3 bg-slate-900 border border-amber-500/40 text-amber-500 rounded-xl hover:bg-amber-500 hover:text-slate-950 transition-all active:scale-90 shadow-2xl z-[210]"
+           >
+              <ArrowLeft size={24} strokeWidth={3} />
+           </button>
           <div className="w-full max-w-2xl relative h-full max-h-[80vh] sm:h-[500px] border border-slate-800 rounded-[2rem] sm:rounded-[4rem] bg-slate-950/60 backdrop-blur-2xl flex flex-col items-center justify-center overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.8)]">
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                <div className="w-64 h-64 sm:w-80 sm:h-80 border-4 border-amber-500/10 rounded-full animate-[ping_3s_infinite]"></div>
@@ -383,14 +397,22 @@ const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({ mission, isCo
         </div>
       )}
 
-      {/* SUCCESS OVERLAY */}
+      {/* SUCCESS OVERLAY - DEBRIEF & NEXT MISSION */}
       {status === 'success' && (
         <div className="fixed inset-0 z-[250] flex flex-col bg-[#010409]/98 backdrop-blur-3xl overflow-y-auto custom-scrollbar animate-in zoom-in-105 duration-700">
+           <button 
+             onClick={() => setStatus('idle')}
+             className="absolute top-8 left-8 p-3 bg-slate-900/80 border border-amber-500/40 text-amber-500 rounded-xl hover:bg-amber-500 hover:text-slate-950 transition-all active:scale-90 shadow-2xl z-[260]"
+           >
+              <ArrowLeft size={24} strokeWidth={3} />
+           </button>
+
            <div ref={particleContainerRef} className="absolute inset-0 pointer-events-none overflow-hidden">
               {particles.map(p => (
                 <div key={p.id} className="absolute rounded-full" style={{ left: `${p.x}%`, top: `${p.y}%`, width: `${p.size}px`, height: `${p.size}px`, backgroundColor: p.color, opacity: p.life, boxShadow: `0 0 10px ${p.color}` }} />
               ))}
            </div>
+           
            <div className="max-w-4xl mx-auto w-full px-4 sm:px-6 py-12 sm:py-20 flex flex-col items-center justify-center min-h-full">
               <div className="relative mb-12 sm:mb-20">
                  <div className="w-40 h-40 sm:w-56 md:w-72 aspect-square rounded-[2rem] sm:rounded-[4rem] border-2 border-white/10 bg-slate-900 flex items-center justify-center shadow-[0_0_80px_rgba(245,158,11,0.3)] transform rotate-12 animate-[victory-float_6s_infinite_ease-in-out] relative z-10">
@@ -402,34 +424,36 @@ const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({ mission, isCo
                     SECTOR <br/><span className="text-amber-500 drop-shadow-[0_0_40px_rgba(245,158,11,0.6)]">STABLE</span>
                  </h2>
               </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8 w-full max-w-3xl mb-12 sm:mb-16 px-4">
-                 <div className="bg-slate-900/80 border border-white/5 p-6 sm:p-10 rounded-2xl sm:rounded-[3.5rem] flex flex-col items-center shadow-3xl">
+                 <div className="bg-slate-900/80 border border-white/5 p-6 sm:p-10 rounded-2xl sm:rounded-[3.5rem] flex flex-col items-center shadow-3xl backdrop-blur-xl">
                     <span className="text-[8px] sm:text-[10px] font-tactical font-black text-slate-500 tracking-[0.4em] uppercase mb-2">Uplink XP Yield</span>
                     <div className="flex items-center gap-3">
                        <Zap size={24} className="text-amber-500 fill-amber-500 animate-pulse" />
                        <span className="text-4xl sm:text-7xl font-tactical font-black text-white leading-none">+{mission.xp + score}</span>
                     </div>
                  </div>
-                 <div className="bg-slate-900/80 border border-white/5 p-6 sm:p-10 rounded-2xl sm:rounded-[3.5rem] flex flex-col items-center shadow-3xl">
+                 <div className="bg-slate-900/80 border border-white/5 p-6 sm:p-10 rounded-2xl sm:rounded-[3.5rem] flex flex-col items-center shadow-3xl backdrop-blur-xl">
                     <span className="text-[8px] sm:text-[10px] font-tactical font-black text-slate-500 tracking-[0.4em] uppercase mb-2">Execution Grade</span>
                     <span className={`text-4xl sm:text-7xl font-tactical font-black italic ${rank.color}`}>
                        {rank.label}
                     </span>
                  </div>
               </div>
+
               <div className="w-full max-w-2xl px-4 mb-16 sm:mb-20">
-                <div className="bg-slate-950/80 border border-slate-800 rounded-[2rem] sm:rounded-[3rem] p-8 sm:p-12 shadow-2xl relative overflow-hidden">
+                <div className="bg-slate-950/90 border border-slate-800 rounded-[2rem] sm:rounded-[3rem] p-8 sm:p-12 shadow-3xl relative overflow-hidden backdrop-blur-2xl">
                   <div className="flex items-center gap-3 mb-8 sm:mb-10">
                     <div className="w-2 h-6 bg-emerald-500"></div>
-                    <h3 className="text-[11px] sm:text-sm font-tactical font-black text-white tracking-[0.3em] uppercase italic">Operational Debrief</h3>
+                    <h3 className="text-sm sm:text-lg font-tactical font-black text-white tracking-[0.3em] uppercase italic">Operational Debrief</h3>
                   </div>
-                  <div className="space-y-6">
+                  <div className="space-y-8">
                     {objectives.map((obj, i) => (
                       <div key={i} className="flex items-center gap-4 sm:gap-8 group/item animate-in slide-in-from-left-6 duration-700" style={{ animationDelay: `${1200 + (i * 200)}ms` }}>
-                        <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-500 shrink-0">
-                          <Check size={20} strokeWidth={4} />
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center text-emerald-500 shrink-0 shadow-[0_0_15px_rgba(16,185,129,0.4)]">
+                          <Check size={24} strokeWidth={4} />
                         </div>
-                        <span className="text-sm sm:text-xl font-tactical font-black text-slate-300 uppercase italic tracking-tighter group-hover/item:text-white transition-colors block">
+                        <span className="text-xs sm:text-lg font-tactical font-black text-slate-300 uppercase italic tracking-tighter group-hover/item:text-white transition-colors block leading-tight">
                           {obj}
                         </span>
                       </div>
@@ -437,13 +461,22 @@ const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({ mission, isCo
                   </div>
                 </div>
               </div>
-              <button 
-                onClick={onReturnToOps || onBack}
-                className="w-full max-w-lg py-6 sm:py-9 rounded-2xl sm:rounded-[4rem] bg-amber-500 hover:bg-amber-400 text-slate-950 font-tactical font-black text-xl sm:text-3xl uppercase tracking-[0.2em] shadow-[0_30px_70px_rgba(245,158,11,0.4)] transition-all active:scale-95 flex items-center justify-center gap-4 group"
-              >
-                RETURN TO OPS
-                <ChevronRight size={32} strokeWidth={4} className="group-hover:translate-x-4 transition-transform" />
-              </button>
+
+              <div className="flex flex-col sm:flex-row gap-6 w-full max-w-3xl px-4">
+                 <button 
+                  onClick={onReturnToOps || onBack}
+                  className="flex-1 py-6 sm:py-8 rounded-2xl sm:rounded-[4rem] bg-slate-900 border border-slate-800 text-slate-400 font-tactical font-black text-lg sm:text-xl uppercase tracking-[0.2em] shadow-xl hover:text-white hover:border-slate-700 transition-all active:scale-95 flex items-center justify-center gap-4 group"
+                >
+                  RETURN TO OPS
+                </button>
+                <button 
+                  onClick={onNextMission}
+                  className="flex-1 py-6 sm:py-8 rounded-2xl sm:rounded-[4rem] bg-amber-500 hover:bg-amber-400 text-slate-950 font-tactical font-black text-xl sm:text-2xl uppercase tracking-[0.2em] shadow-[0_30px_70px_rgba(245,158,11,0.4)] transition-all active:scale-95 flex items-center justify-center gap-4 group"
+                >
+                  NEXT MISSION
+                  <FastForward size={28} strokeWidth={4} className="group-hover:translate-x-3 transition-transform" />
+                </button>
+              </div>
            </div>
         </div>
       )}

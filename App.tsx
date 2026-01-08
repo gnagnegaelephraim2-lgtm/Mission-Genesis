@@ -28,7 +28,8 @@ import {
   SkipBack,
   Headphones,
   ListMusic,
-  X
+  X,
+  Music
 } from 'lucide-react';
 
 const SYNC_ENDPOINT = `https://jsonblob.com/api/jsonBlob/1344400262145327104`;
@@ -332,6 +333,16 @@ const App: React.FC = () => {
     }
   };
 
+  const handleNextMission = useCallback((currentMissionId: number) => {
+    const currentIndex = MISSIONS.findIndex(m => m.id === currentMissionId);
+    const nextMission = MISSIONS[currentIndex + 1];
+    if (nextMission) {
+      setNavigationStack(prev => [...prev.slice(0, -1), { screen: 'missionDetail', props: { mission: nextMission } }]);
+    } else {
+      setNavigationStack([]); 
+    }
+  }, []);
+
   const renderScreen = () => {
     if (!isLoggedIn) {
       return showAuth ? <AuthScreen onLogin={() => { setIsLoggedIn(true); setShowAuth(false); localStorage.setItem('mission_genesis_logged_in', 'true'); }} /> : <LandingScreen onGetStarted={() => setShowAuth(true)} />;
@@ -342,7 +353,16 @@ const App: React.FC = () => {
       switch (current.screen) {
         case 'challenges': return <ChallengeScreen world={current.props.world} completedMissions={completedMissions} onBack={() => { setNavigationStack(navigationStack.slice(0, -1)); }} onSelectChapter={(chapter) => { setNavigationStack([...navigationStack, { screen: 'missions', props: { chapter } }]); }} />;
         case 'missions': return < MissionsScreen chapter={current.props.chapter} completedMissions={completedMissions} onBack={() => { setNavigationStack(navigationStack.slice(0, -1)); }} onSelectMission={(mission) => { setNavigationStack([...navigationStack, { screen: 'missionDetail', props: { mission } }]); }} />;
-        case 'missionDetail': return <MissionDetailScreen mission={current.props.mission} isCompleted={completedMissions.includes(current.props.mission.id)} onComplete={(id, worldId) => handleMissionComplete(id, worldId)} onBack={() => { setNavigationStack(navigationStack.slice(0, -1)); }} onReturnToOps={() => { setNavigationStack([]); }} />;
+        case 'missionDetail': return (
+          <MissionDetailScreen 
+            mission={current.props.mission} 
+            isCompleted={completedMissions.includes(current.props.mission.id)} 
+            onComplete={(id, worldId) => handleMissionComplete(id, worldId)} 
+            onBack={() => { setNavigationStack(navigationStack.slice(0, -1)); }} 
+            onReturnToOps={() => { setNavigationStack([]); }} 
+            onNextMission={() => handleNextMission(current.props.mission.id)}
+          />
+        );
         default: return null;
       }
     }
@@ -380,9 +400,18 @@ const App: React.FC = () => {
                 </div>
               </div>
               <div className="flex items-center gap-2 sm:gap-3">
-                <button onClick={toggleAudio} className={`p-2.5 transition-all flex items-center gap-2 border border-slate-700 rounded-xl ${isAudioActive ? 'bg-amber-500 text-slate-950 border-amber-600' : 'text-slate-500 border-slate-800'}`}>
-                  {isAudioActive ? <Headphones size={20} className="animate-pulse" /> : <VolumeX size={20} />}
-                  <span className="hidden lg:inline text-[9px] font-tactical font-black uppercase tracking-widest">{isAudioActive ? `BEAT #${trackId}` : 'OFF'}</span>
+                <button 
+                  onClick={toggleAudio} 
+                  className={`px-4 py-2.5 transition-all flex items-center gap-2 border rounded-xl shadow-lg active:scale-95 ${
+                    isAudioActive 
+                    ? 'bg-amber-500 text-slate-950 border-amber-600 shadow-amber-500/20' 
+                    : 'bg-slate-900 text-slate-500 border-slate-800'
+                  }`}
+                >
+                  {isAudioActive ? <Headphones size={20} className="animate-pulse" /> : <Music size={20} />}
+                  <span className="text-[10px] font-tactical font-black uppercase tracking-widest">
+                    {isAudioActive ? `BEAT #${trackId}` : 'RADIO OFF'}
+                  </span>
                 </button>
               </div>
             </div>
