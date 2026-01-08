@@ -132,7 +132,7 @@ export const CHAPTER_MISSION_IDS: Record<string, number[]> = MISSIONS.reduce((ac
 }, {} as Record<string, number[]>);
 
 export const OPPORTUNITIES: Opportunity[] = [
-  // UNIVERSITIES (53)
+  // UNIVERSITIES (54)
   { id: 1, name: "UCT", category: 'University', description: "University of Cape Town - Africa's top-ranked research institution.", logo: "🇿🇦", recommended: true, url: "https://www.uct.ac.za/" },
   { id: 2, name: "ALU", category: 'University', description: "African Leadership University - Innovative leadership-focused STEM training.", logo: "🎓", recommended: true, url: "https://www.alueducation.com/" },
   { id: 3, name: "Wits University", category: 'University', description: "University of the Witwatersrand - Leader in deep tech and engineering.", logo: "🇿🇦", recommended: true, url: "https://www.wits.ac.za/" },
@@ -186,6 +186,7 @@ export const OPPORTUNITIES: Opportunity[] = [
   { id: 51, name: "Univ. Yaoundé I", category: 'University', description: "Cameroon's premier research university for sciences.", logo: "🇨🇲", recommended: false, url: "https://www.uy1.uninet.cm/" },
   { id: 52, name: "Univ. Douala", category: 'University', description: "Economic heart university of Cameroon with tech focus.", logo: "🇨🇲", recommended: false, url: "https://www.univ-douala.com/" },
   { id: 53, name: "Univ. d'Abidjan", category: 'University', description: "Université Félix Houphouët-Boigny - Côte d'Ivoire flagship.", logo: "🇨🇮", recommended: false, url: "https://www.univ-fhb.edu.ci/" },
+  { id: 54, name: "ALC Education", category: 'University', description: "Advanced Learning Center - Global standard higher education and STEM research.", logo: "📚", recommended: true, url: "https://alcheducation.com/" },
 
   // FELLOWSHIPS (30)
   { id: 201, name: "Mandela Washington", category: 'Fellowship', description: "Premier program for young African leaders in the USA.", logo: "🦅", recommended: true, url: "https://www.mandelawashingtonfellowship.org/" },

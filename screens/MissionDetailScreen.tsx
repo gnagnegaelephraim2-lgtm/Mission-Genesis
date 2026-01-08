@@ -19,7 +19,9 @@ import {
   ArrowLeft,
   FastForward,
   ArrowRight,
-  Terminal
+  Terminal,
+  Info,
+  X
 } from 'lucide-react';
 
 interface MissionDetailScreenProps {
@@ -42,6 +44,23 @@ interface Particle {
   life: number;
 }
 
+const INTEL_DATABASE: Record<string, string> = {
+  'bottleneck': 'A point of congestion in a system that occurs when workloads arrive too quickly for the processor or network to handle effectively.',
+  'mesh stability': 'The resilience of a decentralized network. High stability ensures data integrity across all distributed nodes even if individual nodes fail.',
+  'anomaly': 'A detected deviation from expected patterns. In STEM missions, anomalies often signal systemic failures or undiscovered scientific phenomena.',
+  'practical knowledge': 'The application of theoretical concepts to solve real-world engineering, scientific, or social challenges through direct action.',
+  'tactical': 'Strategies or actions carefully planned to achieve a specific military or operational end. In Genesis, it refers to precise problem-solving.',
+  'sector': 'A specific functional or geographical area of the Global Mesh requiring dedicated focus and expertise.',
+  'credentials': 'Verified digital signatures required to access high-security neural sectors and data nodes.',
+  'synapse': 'In our neural mesh, a synapse represents the critical link between two intelligence modules.',
+  'SPACE': 'The final frontier. Orbital mechanics, cosmic radiation, and satellite logistics are the primary focus of this sector.',
+  'HEALTH': 'Biological systems maintenance. Focused on epidemiology, CRISPR technology, and pathogen containment protocols.',
+  'ENVIRON': 'Planetary life-support systems. Focused on gaia-shielding, carbon sequestration, and biodiversity resilience.',
+  'CS': 'Computational logic and algorithmic architecture. The fundamental language of the global neural mesh.',
+  'PHYSICS': 'The study of matter and energy. Focused on thermodynamics, kinetic pulses, and quantum engineering.',
+  'MATH': 'Prime logic and numerical constants. The foundation of all scientific and engineering disciplines.'
+};
+
 const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({ mission, isCompleted, onComplete, onBack, onReturnToOps, onNextMission }) => {
   const [status, setStatus] = useState<'idle' | 'decryption' | 'executing' | 'flash' | 'success'>('idle');
   const [progress, setProgress] = useState(0);
@@ -51,12 +70,12 @@ const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({ mission, isCo
   const [particles, setParticles] = useState<Particle[]>([]);
   const [decryptionFeedback, setDecryptionFeedback] = useState<{ correct: boolean, revealed: boolean } | null>(null);
   const [attemptCount, setAttemptCount] = useState(0);
+  const [activeIntel, setActiveIntel] = useState<{ term: string, definition: string } | null>(null);
   
   const audioRef = useRef<AudioContext | null>(null);
   const particleContainerRef = useRef<HTMLDivElement>(null);
 
   // CRITICAL: Reset state when mission changes to prevent success-state inheritance
-  // This ensures that when 'NEXT' is clicked, the new mission starts in 'idle' mode (not solved).
   useEffect(() => {
     setStatus('idle');
     setProgress(0);
@@ -66,6 +85,7 @@ const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({ mission, isCo
     setParticles([]);
     setDecryptionFeedback(null);
     setAttemptCount(0);
+    setActiveIntel(null);
   }, [mission.id]);
   
   const playSFX = useCallback((freq: number, type: OscillatorType = 'sine', duration: number = 0.2, volume: number = 0.1) => {
@@ -227,6 +247,31 @@ const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({ mission, isCo
     `Broadcast Secure Mesh Signal`
   ];
 
+  const renderInteractiveStory = (story: string) => {
+    const keywords = Object.keys(INTEL_DATABASE).sort((a, b) => b.length - a.length);
+    const regex = new RegExp(`(${keywords.join('|')})`, 'gi');
+    
+    const parts = story.split(regex);
+    return parts.map((part, i) => {
+      const match = keywords.find(k => k.toLowerCase() === part.toLowerCase());
+      if (match) {
+        return (
+          <button
+            key={i}
+            onClick={() => {
+              setActiveIntel({ term: match, definition: INTEL_DATABASE[match] });
+              playSFX(1400, 'sine', 0.05, 0.05);
+            }}
+            className="text-amber-500 underline underline-offset-4 decoration-amber-500/30 hover:decoration-amber-500 transition-all cursor-help font-black"
+          >
+            {part}
+          </button>
+        );
+      }
+      return <span key={i}>{part}</span>;
+    });
+  };
+
   return (
     <div className="flex flex-col min-h-full relative overflow-x-hidden bg-[#010409] animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* HEADER WITH NEXT ARROW AT UPPER RIGHT */}
@@ -288,8 +333,33 @@ const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({ mission, isCo
               <div className="w-1.5 h-4 bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]"></div>
               <h3 className="text-[8px] sm:text-xs font-tactical font-black text-white tracking-widest uppercase italic">Sector Mission Intel</h3>
            </div>
-           <p className="text-sm sm:text-xl md:text-2xl text-slate-300 font-medium italic leading-relaxed">"{mission.story}"</p>
+           <p className="text-sm sm:text-xl md:text-2xl text-slate-300 font-medium italic leading-relaxed">
+             "{renderInteractiveStory(mission.story)}"
+           </p>
+           <div className="mt-6 flex items-center gap-2 text-slate-600 text-[10px] font-tactical font-black tracking-widest uppercase animate-pulse">
+              <Info size={12} />
+              Tap highlighted terms for tactical analysis
+           </div>
         </section>
+
+        {activeIntel && (
+          <div className="bg-slate-900 border border-amber-500/40 p-6 rounded-[2rem] shadow-2xl animate-in slide-in-from-top-4 duration-500 relative overflow-hidden">
+             <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 blur-2xl"></div>
+             <button 
+               onClick={() => setActiveIntel(null)}
+               className="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors"
+             >
+                <X size={20} />
+             </button>
+             <div className="flex items-center gap-3 mb-3">
+                <BrainCircuit size={18} className="text-amber-500" />
+                <h4 className="text-xs font-tactical font-black text-amber-500 uppercase tracking-widest">Neural Intel Scan: {activeIntel.term}</h4>
+             </div>
+             <p className="text-sm sm:text-base text-slate-300 italic font-medium leading-relaxed">
+               {activeIntel.definition}
+             </p>
+          </div>
+        )}
 
         {status === 'idle' && (
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 pt-4 sm:pt-8 px-4">
