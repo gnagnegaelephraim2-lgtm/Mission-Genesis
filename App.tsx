@@ -12,6 +12,7 @@ import MissionsScreen from './screens/MissionsScreen';
 import MissionDetailScreen from './screens/MissionDetailScreen';
 import AuthScreen from './screens/AuthScreen';
 import LandingScreen from './screens/LandingScreen';
+import SkillPassportScreen from './screens/SkillPassportScreen';
 import { MISSIONS } from './constants';
 import { 
   Home, 
@@ -23,8 +24,8 @@ import {
   Users,
   SkipForward,
   Headphones,
-  VolumeX,
-  Music
+  Music,
+  Fingerprint
 } from 'lucide-react';
 
 const SYNC_ENDPOINT = `https://jsonblob.com/api/jsonBlob/1344400262145327104`;
@@ -133,7 +134,6 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (isLoggedIn) {
-      // Trigger the welcome message exactly 2 seconds after the user gets in the app
       const timer = setTimeout(() => {
         playWelcomeMessage();
       }, 2000);
@@ -178,7 +178,6 @@ const App: React.FC = () => {
 
     stopAudio();
 
-    // UPGRADED VARIETY: Use seed to significantly shift musicality
     const bpm = 70 + ((seed * 17) % 55); 
     const secondsPerBeat = 60 / bpm;
     const subdivision = secondsPerBeat / 4; 
@@ -187,7 +186,6 @@ const App: React.FC = () => {
     const rootFreqs = [32.70, 34.65, 36.71, 38.89, 41.20, 43.65, 46.25, 48.99, 51.91, 55.00, 58.27, 61.74];
     const root = rootFreqs[(seed * 7) % rootFreqs.length];
     
-    // Different scales: Major, Minor, Phrygian, Dorian, Lydian, Blues
     const scaleTypes = [
       [1, 1.12, 1.26, 1.5, 1.68, 1.88, 2],
       [1, 1.12, 1.18, 1.5, 1.58, 1.78, 2],
@@ -262,8 +260,6 @@ const App: React.FC = () => {
 
     sequencerIntervalRef.current = window.setInterval(() => {
       const startTime = ctx.currentTime + 0.05;
-      
-      // Seed-based rhythmic patterns
       const kickPattern = (seed % 3 === 0) 
         ? [1,0,0,1, 0,0,0,0, 1,0,1,0, 0,0,0,1]
         : (seed % 3 === 1)
@@ -275,7 +271,6 @@ const App: React.FC = () => {
       if (kickPattern[currentStep % 16]) playKick(startTime, currentStep % 16 === 0 ? 1.3 : 0.8);
       if (snarePattern[currentStep % 16]) playSnare(startTime, 1.2);
       
-      // Varied Hi-Hat patterns
       const hatMod = (seed % 4) + 1;
       if (currentStep % hatMod === 0) playHiHat(startTime, currentStep % (hatMod * 2) === 0);
       
@@ -301,7 +296,6 @@ const App: React.FC = () => {
   };
 
   const skipTrack = () => {
-    // Cycle through 100 different procedural tracks
     const nextId = trackId >= 100 ? 1 : trackId + 1;
     setTrackId(nextId);
     if (isAudioActive) {
@@ -411,6 +405,7 @@ const App: React.FC = () => {
 
     switch (activeTab) {
       case 'home': return <HomeScreen completedMissions={completedMissions} signals={globalMesh.signals} onSelectWorld={(world) => { setNavigationStack([{ screen: 'challenges', props: { world } }]); }} isSyncing={isSyncing} />;
+      case 'passport': return <SkillPassportScreen completedMissions={completedMissions} userXp={userXp} userLevel={userLevel} />;
       case 'opportunities': return <OpportunitiesScreen />;
       case 'community': return <CommunityScreen userProfile={userProfile} userLevel={userLevel} onShareInvite={() => {}} />;
       case 'leaderboard': return <LeaderboardScreen userXp={userXp} userProfile={userProfile} meshCommanders={globalMesh.commanders} isSyncing={isSyncing} onRefresh={() => syncWithMesh(true)} onShareInvite={() => {}} />;
@@ -477,7 +472,14 @@ const App: React.FC = () => {
 
         {isLoggedIn && (
           <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-lg backdrop-blur-3xl border border-slate-700/50 bg-slate-950/80 rounded-3xl px-2 sm:px-4 py-3 sm:py-4 flex justify-between items-center z-50 shadow-3xl">
-            {[ { id: 'home', icon: Home, label: 'Ops' }, { id: 'opportunities', icon: Briefcase, label: 'Growth' }, { id: 'community', icon: Users, label: 'Mesh' }, { id: 'leaderboard', icon: Trophy, label: 'Elite' }, { id: 'profile', icon: User, label: 'ID' } ].map((tab) => {
+            {[ 
+              { id: 'home', icon: Home, label: 'Ops' }, 
+              { id: 'passport', icon: Fingerprint, label: 'Passport' },
+              { id: 'opportunities', icon: Briefcase, label: 'Growth' }, 
+              { id: 'community', icon: Users, label: 'Mesh' }, 
+              { id: 'leaderboard', icon: Trophy, label: 'Elite' }, 
+              { id: 'profile', icon: User, label: 'ID' } 
+            ].map((tab) => {
               const isActive = activeTab === tab.id && navigationStack.length === 0;
               return (
                 <button key={tab.id} onClick={() => { setNavigationStack([]); setActiveTab(tab.id as TabType); }} className={`flex flex-col items-center gap-1 flex-1 transition-all ${isActive ? 'text-amber-500' : 'text-slate-500'}`}>

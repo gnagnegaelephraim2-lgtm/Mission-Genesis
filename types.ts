@@ -1,5 +1,5 @@
 
-export type TabType = 'home' | 'opportunities' | 'community' | 'leaderboard' | 'profile';
+export type TabType = 'home' | 'opportunities' | 'community' | 'leaderboard' | 'profile' | 'passport';
 
 export interface World {
   id: string;
