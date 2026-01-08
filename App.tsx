@@ -67,6 +67,8 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('home');
   const [navigationStack, setNavigationStack] = useState<any[]>([]);
   const [completedMissions, setCompletedMissions] = useState<number[]>([]);
+  const [claimedAchievements, setClaimedAchievements] = useState<number[]>([]);
+  const [achievementBonusXp, setAchievementBonusXp] = useState<number>(0);
   const [showAuth, setShowAuth] = useState<boolean>(false);
   const [globalMesh, setGlobalMesh] = useState<GlobalMesh>({ commanders: [], signals: [] });
   const [isSyncing, setIsSyncing] = useState(false);
@@ -150,40 +152,6 @@ const App: React.FC = () => {
     activeNodesRef.current.forEach(node => { try { (node as any).stop(); } catch (e) {} });
     activeNodesRef.current = [];
   }, []);
-
-  const playWelcomeVoice = useCallback(async () => {
-    if (welcomePlayedRef.current) return;
-    try {
-      const ctx = getAudioContext();
-      if (ctx.state === 'suspended') await ctx.resume();
-
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash-preview-tts",
-        contents: [{ parts: [{ text: 'Welcome to Mission Genesis. Neural uplink established.' }] }],
-        config: {
-          responseModalities: [Modality.AUDIO],
-          speechConfig: {
-              voiceConfig: {
-                prebuiltVoiceConfig: { voiceName: 'Kore' },
-              },
-          },
-        },
-      });
-
-      const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-      if (base64Audio) {
-        const audioBuffer = await decodeAudioData(decode(base64Audio), ctx, 24000, 1);
-        const source = ctx.createBufferSource();
-        source.buffer = audioBuffer;
-        source.connect(ctx.destination);
-        source.start();
-        welcomePlayedRef.current = true;
-      }
-    } catch (e) {
-      console.warn("TTS Welcome failed", e);
-    }
-  }, [getAudioContext]);
 
   const startProceduralRap = useCallback((seed: number) => {
     const ctx = getAudioContext();
@@ -287,27 +255,6 @@ const App: React.FC = () => {
     }, subdivision * 1000);
   }, [getAudioContext]);
 
-  const handleNextBeat = useCallback(() => {
-    const nextTrack = (trackId % 1000) + 1;
-    setTrackId(nextTrack);
-    playInteractionSFX(1000, 'square', 0.1, 0.03);
-    if (isAudioActive) startProceduralRap(nextTrack - 1);
-  }, [trackId, isAudioActive, startProceduralRap, playInteractionSFX]);
-
-  const handlePrevBeat = useCallback(() => {
-    const prevTrack = trackId === 1 ? 1000 : trackId - 1;
-    setTrackId(prevTrack);
-    playInteractionSFX(600, 'square', 0.1, 0.03);
-    if (isAudioActive) startProceduralRap(prevTrack - 1);
-  }, [trackId, isAudioActive, startProceduralRap, playInteractionSFX]);
-
-  const jumpToTrack = useCallback((id: number) => {
-    setTrackId(id);
-    setShowPlaylist(false);
-    playInteractionSFX(1200, 'sine', 0.2, 0.05);
-    if (isAudioActive) startProceduralRap(id - 1);
-  }, [isAudioActive, startProceduralRap, playInteractionSFX]);
-
   const toggleAudio = () => {
     if (isAudioActive) {
       stopAudio();
@@ -321,11 +268,12 @@ const App: React.FC = () => {
   };
 
   const userXp = useMemo(() => {
-    return completedMissions.reduce((total, id) => {
+    const missionXp = completedMissions.reduce((total, id) => {
       const mission = MISSIONS.find(m => m.id === id);
       return total + (mission?.xp || 0);
     }, 0);
-  }, [completedMissions]);
+    return missionXp + achievementBonusXp;
+  }, [completedMissions, achievementBonusXp]);
 
   const userLevel = Math.floor(userXp / 1000);
 
@@ -347,60 +295,46 @@ const App: React.FC = () => {
     } catch (e) {} finally { setIsSyncing(false); }
   }, [isLoggedIn, userXp, userProfile]);
 
-  const broadcastSignal = async (action: string) => {
-    try {
-      const res = await fetch(SYNC_ENDPOINT);
-      const data: GlobalMesh = await res.json();
-      data.signals = [...(data.signals || []), { id: crypto.randomUUID(), commander: userProfile.username, action, timestamp: Date.now() }].slice(-20);
-      await fetch(SYNC_ENDPOINT, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-      setGlobalMesh(data);
-    } catch (e) {}
-  };
-
   useEffect(() => {
-    if (isLoggedIn) {
-      syncWithMesh();
-      const interval = setInterval(() => syncWithMesh(false), 20000);
-      return () => clearInterval(interval);
-    }
-  }, [isLoggedIn, syncWithMesh]);
-
-  useEffect(() => {
-    const saved = localStorage.getItem('mission_genesis_completed');
-    if (saved) setCompletedMissions(JSON.parse(saved));
+    const savedMissions = localStorage.getItem('mission_genesis_completed');
+    if (savedMissions) setCompletedMissions(JSON.parse(savedMissions));
+    
+    const savedAchieved = localStorage.getItem('mission_genesis_claimed_achievements');
+    if (savedAchieved) setClaimedAchievements(JSON.parse(savedAchieved));
+    
+    const savedBonus = localStorage.getItem('mission_genesis_achievement_bonus');
+    if (savedBonus) setAchievementBonusXp(parseInt(savedBonus));
   }, []);
 
   useEffect(() => { 
     localStorage.setItem('mission_genesis_completed', JSON.stringify(completedMissions)); 
+    localStorage.setItem('mission_genesis_claimed_achievements', JSON.stringify(claimedAchievements));
+    localStorage.setItem('mission_genesis_achievement_bonus', achievementBonusXp.toString());
     localStorage.setItem('mission_genesis_profile', JSON.stringify(userProfile));
-  }, [completedMissions, userProfile]);
+  }, [completedMissions, claimedAchievements, achievementBonusXp, userProfile]);
 
   const handleMissionComplete = (missionId: number, worldId: string) => {
     if (!completedMissions.includes(missionId)) {
       setCompletedMissions(prev => [...prev, missionId]);
-      broadcastSignal(`secured Sector ${worldId.toUpperCase()} Node`);
+      syncWithMesh(true);
       playInteractionSFX(1200, 'square', 0.3, 0.04); 
     }
   };
 
-  const handleLogin = () => {
-    setIsLoggedIn(true);
-    setShowAuth(false);
-    localStorage.setItem('mission_genesis_logged_in', 'true');
-    syncWithMesh(true);
-  };
-
-  const handleLogout = () => {
-    stopAudio();
-    setIsLoggedIn(false);
-    localStorage.removeItem('mission_genesis_logged_in');
-    setNavigationStack([]);
-    setActiveTab('home');
+  const handleClaimAchievement = (id: number, xpReward: number) => {
+    if (!claimedAchievements.includes(id)) {
+      setClaimedAchievements(prev => [...prev, id]);
+      setAchievementBonusXp(prev => prev + xpReward);
+      playInteractionSFX(1500, 'square', 0.5, 0.1);
+      syncWithMesh(true);
+      setNotification({ message: `Tactical Reward Claimed: +${xpReward} XP!`, type: 'success' });
+      setTimeout(() => setNotification(null), 3000);
+    }
   };
 
   const renderScreen = () => {
     if (!isLoggedIn) {
-      return showAuth ? <AuthScreen onLogin={handleLogin} /> : <LandingScreen onGetStarted={() => { setShowAuth(true); playWelcomeVoice(); }} />;
+      return showAuth ? <AuthScreen onLogin={() => { setIsLoggedIn(true); setShowAuth(false); localStorage.setItem('mission_genesis_logged_in', 'true'); }} /> : <LandingScreen onGetStarted={() => setShowAuth(true)} />;
     }
     
     if (navigationStack.length > 0) {
@@ -418,13 +352,18 @@ const App: React.FC = () => {
       case 'opportunities': return <OpportunitiesScreen />;
       case 'community': return <CommunityScreen userProfile={userProfile} userLevel={userLevel} onShareInvite={() => {}} />;
       case 'leaderboard': return <LeaderboardScreen userXp={userXp} userProfile={userProfile} meshCommanders={globalMesh.commanders} isSyncing={isSyncing} onRefresh={() => syncWithMesh(true)} onShareInvite={() => {}} />;
-      case 'profile': return <ProfileScreen userXp={userXp} userLevel={userLevel} userProfile={userProfile} onUpdateProfile={(p) => setUserProfile({ ...userProfile, ...p })} completedMissions={completedMissions} onLogout={handleLogout} onShareInvite={() => {}} />;
+      case 'profile': return <ProfileScreen userXp={userXp} userLevel={userLevel} userProfile={userProfile} onUpdateProfile={(p) => setUserProfile({ ...userProfile, ...p })} completedMissions={completedMissions} claimedAchievements={claimedAchievements} onClaimAchievement={handleClaimAchievement} onLogout={() => { setIsLoggedIn(false); localStorage.removeItem('mission_genesis_logged_in'); }} onShareInvite={() => {}} />;
       default: return <HomeScreen completedMissions={completedMissions} signals={globalMesh.signals} onSelectWorld={(world) => { setNavigationStack([{ screen: 'challenges', props: { world } }]); }} isSyncing={isSyncing} />;
     }
   };
 
   return (
     <div className="flex justify-center h-screen w-screen overflow-hidden bg-[#010409] text-white">
+      {notification && (
+        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[200] px-8 py-4 rounded-2xl bg-slate-900 border border-amber-500 text-amber-500 font-tactical font-black text-xs uppercase tracking-widest animate-in slide-in-from-top-4 shadow-2xl">
+          {notification.message}
+        </div>
+      )}
       <div className="w-full max-w-screen-xl h-screen flex flex-col relative border-x border-slate-800/40 bg-[#020617]/50">
         <header className="px-6 pt-10 pb-4 flex items-center justify-between z-50 shrink-0">
           {isLoggedIn ? (
@@ -441,15 +380,10 @@ const App: React.FC = () => {
                 </div>
               </div>
               <div className="flex items-center gap-2 sm:gap-3">
-                <div className="flex items-center bg-slate-900/60 border border-slate-700 rounded-xl overflow-hidden shadow-lg">
-                  <button onClick={handlePrevBeat} className="p-2.5 text-slate-500 hover:text-amber-500 transition-all border-r border-slate-800"><SkipBack size={20} /></button>
-                  <button onClick={toggleAudio} className={`p-2.5 transition-all flex items-center gap-2 ${isAudioActive ? 'bg-amber-500 text-slate-950 border-x border-amber-600' : 'text-slate-500 border-x border-slate-800'}`}>
-                    {isAudioActive ? <Headphones size={20} className="animate-pulse" /> : <VolumeX size={20} />}
-                    <span className="hidden lg:inline text-[9px] font-tactical font-black uppercase tracking-widest">{isAudioActive ? `BEAT #${formatTrackNum(trackId)}` : 'OFF'}</span>
-                  </button>
-                  <button onClick={handleNextBeat} className="p-2.5 text-slate-500 hover:text-amber-500 transition-all border-r border-slate-800"><SkipForward size={20} /></button>
-                  <button onClick={() => setShowPlaylist(true)} className={`p-2.5 transition-all ${showPlaylist ? 'text-amber-500' : 'text-slate-500 hover:text-white'}`}><ListMusic size={20} /></button>
-                </div>
+                <button onClick={toggleAudio} className={`p-2.5 transition-all flex items-center gap-2 border border-slate-700 rounded-xl ${isAudioActive ? 'bg-amber-500 text-slate-950 border-amber-600' : 'text-slate-500 border-slate-800'}`}>
+                  {isAudioActive ? <Headphones size={20} className="animate-pulse" /> : <VolumeX size={20} />}
+                  <span className="hidden lg:inline text-[9px] font-tactical font-black uppercase tracking-widest">{isAudioActive ? `BEAT #${trackId}` : 'OFF'}</span>
+                </button>
               </div>
             </div>
           ) : (
@@ -475,26 +409,6 @@ const App: React.FC = () => {
           </nav>
         )}
       </div>
-
-      {showPlaylist && (
-        <div className="fixed inset-0 z-[100] flex justify-end">
-           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowPlaylist(false)}></div>
-           <div className="relative w-full max-w-md h-full bg-slate-950 border-l border-slate-800 flex flex-col animate-in slide-in-from-right duration-500">
-              <div className="p-8 border-b border-slate-800 flex items-center justify-between sticky top-0 z-20 bg-slate-950">
-                 <div className="flex items-center gap-4"><Music4 size={28} className="text-amber-500" /><div className="text-left"><h3 className="text-2xl font-tactical font-black text-white italic uppercase">BEAT GRID</h3><p className="text-[9px] font-tactical font-black text-slate-500 uppercase">1000 Procedural Uplinks</p></div></div>
-                 <button onClick={() => setShowPlaylist(false)} className="p-3 bg-slate-900 border border-slate-800 rounded-2xl text-slate-500 hover:text-white"><X size={24} /></button>
-              </div>
-              <div className="flex-1 overflow-y-auto p-6 grid grid-cols-4 gap-3 custom-scrollbar">
-                 {Array.from({ length: 1000 }).map((_, i) => (
-                     <button key={i+1} onClick={() => jumpToTrack(i+1)} className={`aspect-square rounded-xl border flex flex-col items-center justify-center transition-all ${i+1 === trackId ? 'bg-amber-500 border-amber-400 text-slate-950' : 'bg-slate-900/40 border-slate-800 text-slate-500 hover:border-amber-500/40'}`}>
-                       <span className="text-[8px] font-tactical font-black uppercase opacity-60">BT</span>
-                       <span className="text-sm font-tactical font-black italic">{i+1}</span>
-                     </button>
-                 ))}
-              </div>
-           </div>
-        </div>
-      )}
     </div>
   );
 };

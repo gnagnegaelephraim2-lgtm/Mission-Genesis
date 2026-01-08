@@ -22,6 +22,13 @@ export interface Chapter {
 
 export type MissionType = 'Standard' | 'Rhythm' | 'Data-Stream';
 
+export interface Challenge {
+  question: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+}
+
 export interface Mission {
   id: number;
   worldId: string; 
@@ -34,6 +41,8 @@ export interface Mission {
   completed: boolean;
   environment: string;
   type?: MissionType;
+  objectives?: string[];
+  challenge?: Challenge;
 }
 
 export interface Opportunity {

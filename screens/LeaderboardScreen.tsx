@@ -1,7 +1,7 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
 import { Player } from '../types';
-import { Trophy, Zap, Medal, RefreshCw, Loader2, Radio, Info, Activity, UserPlus, Users } from 'lucide-react';
+import { Trophy, Zap, Medal, RefreshCw, Loader2, Radio, Info, Activity, UserPlus, Users, Timer } from 'lucide-react';
 
 interface LeaderboardScreenProps {
   userXp: number;
@@ -12,7 +12,8 @@ interface LeaderboardScreenProps {
   onShareInvite?: () => void;
 }
 
-// Helper to generate large diverse user set
+const SURGE_INTERVAL = 15 * 60 * 1000; // 15 minutes
+
 const generateSimulatedUsers = (count: number): Player[] => {
   const avatars = ['🦅', '🦁', '🐆', '🐘', '🦍', '🦓', '🦒', '🦏', '🐍', '🦎', '🐃', '🐾'];
   const prefixes = ['Node', 'Cipher', 'Alpha', 'Delta', 'Command', 'Grid', 'Nexus', 'Ghost', 'Zenith', 'Vector'];
@@ -21,7 +22,7 @@ const generateSimulatedUsers = (count: number): Player[] => {
   return Array.from({ length: count }).map((_, i) => ({
     rank: 0,
     username: `${prefixes[i % prefixes.length]}${suffixes[(i * 3) % suffixes.length]}_${100 + i}`,
-    xp: Math.max(500, Math.floor(15000 * Math.pow(0.95, i))), // Exponential decay for realistic curve
+    xp: Math.max(500, Math.floor(15000 * Math.pow(0.95, i))),
     avatar: avatars[i % avatars.length],
     id: `sim-${i}`,
     lastActive: Date.now() - (Math.random() * 3600000)
@@ -38,33 +39,56 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({
 }) => {
   const [sessionStartTime] = useState(Date.now());
   const [currentTime, setCurrentTime] = useState(Date.now());
+  const [simulatedPlayers, setSimulatedPlayers] = useState<Player[]>(() => generateSimulatedUsers(100));
+  const [nextSurgeTime, setNextSurgeTime] = useState(Date.now() + SURGE_INTERVAL);
 
-  // Update clock for the 2-minute join simulation
+  // Automated XP Growth Effect
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(Date.now()), 10000);
-    return () => clearInterval(timer);
+    const surgeInterval = setInterval(() => {
+      setSimulatedPlayers(prev => prev.map(p => ({
+        ...p,
+        xp: p.xp + Math.floor(Math.random() * 600) + 200,
+        lastActive: Date.now()
+      })));
+      setNextSurgeTime(Date.now() + SURGE_INTERVAL);
+    }, SURGE_INTERVAL);
+
+    const clockInterval = setInterval(() => setCurrentTime(Date.now()), 1000);
+
+    return () => {
+      clearInterval(surgeInterval);
+      clearInterval(clockInterval);
+    };
   }, []);
 
+  const formatTimeRemaining = (targetTime: number) => {
+    const diff = Math.max(0, targetTime - currentTime);
+    const mins = Math.floor(diff / 60000);
+    const secs = Math.floor((diff % 60000) / 1000);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   const dynamicPlayers = useMemo(() => {
-    // Generate base simulated pool
-    const simulatedPool = generateSimulatedUsers(100);
-    
-    // Simulate new users joining every 2 mins since session start
-    const minutesElapsed = Math.floor((currentTime - sessionStartTime) / (2 * 60 * 1000));
-    const newRecruits: Player[] = Array.from({ length: minutesElapsed }).map((_, i) => ({
+    const minutesElapsedSinceStart = Math.floor((currentTime - sessionStartTime) / (2 * 60 * 1000));
+    const newRecruits: Player[] = Array.from({ length: minutesElapsedSinceStart }).map((_, i) => ({
       rank: 0,
       username: `Recruit_${i + 1}`,
-      xp: 0,
+      xp: 0 + (Math.floor((currentTime - sessionStartTime) / SURGE_INTERVAL) * 500), // Recruits also gain if they've been around
       avatar: '🐣',
       id: `recruit-${i}`,
       lastActive: Date.now()
     }));
 
-    let pool = [...meshCommanders, ...simulatedPool, ...newRecruits];
+    let pool = [...meshCommanders, ...simulatedPlayers, ...newRecruits];
     const uniquePoolMap = new Map<string, Player>();
-    pool.forEach(p => { if (p.id) uniquePoolMap.set(p.id, p); });
+    
+    pool.forEach(p => { 
+      if (p.id && p.id !== userProfile.id) {
+        uniquePoolMap.set(p.id, p); 
+      }
+    });
 
-    // Ensure current user is in
+    // Inject User (Strictly User Props, no auto-increase)
     uniquePoolMap.set(userProfile.id || 'current-user', {
       rank: 0, 
       username: userProfile.username, 
@@ -78,7 +102,7 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({
     return Array.from(uniquePoolMap.values())
       .sort((a, b) => b.xp - a.xp)
       .map((p, i) => ({ ...p, rank: i + 1 }));
-  }, [userXp, userProfile, meshCommanders, currentTime, sessionStartTime]);
+  }, [userXp, userProfile, meshCommanders, simulatedPlayers, currentTime, sessionStartTime]);
 
   const currentUser = dynamicPlayers.find(p => p.isUser);
   const userRank = currentUser?.rank || '-';
@@ -97,9 +121,15 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({
                 {isSyncing ? 'UPLINKING...' : 'MESH LIVE'}
              </div>
           </div>
-          <p className="text-slate-500 text-xs font-tactical font-bold uppercase tracking-[0.2em] mt-2 italic">
-            Global Standing: <span className="text-white font-black italic">Rank #{userRank} of {totalUsers}</span>
-          </p>
+          <div className="flex items-center gap-4 mt-2">
+            <p className="text-slate-500 text-xs font-tactical font-bold uppercase tracking-[0.2em] italic">
+              Standing: <span className="text-white font-black italic">#{userRank} / {totalUsers}</span>
+            </p>
+            <div className="flex items-center gap-2 px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800">
+               <Timer size={10} className="text-amber-500" />
+               <span className="text-[9px] font-tactical font-black text-slate-400 uppercase tracking-widest">Next Surge: {formatTimeRemaining(nextSurgeTime)}</span>
+            </div>
+          </div>
         </div>
         
         <div className="flex gap-3">
@@ -113,7 +143,6 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({
         </div>
       </div>
 
-      {/* Recruits Ticker */}
       <div className="mb-8 p-4 bg-slate-900/40 border border-slate-800 rounded-2xl flex items-center gap-4 overflow-hidden shadow-inner">
          <div className="flex items-center gap-2 shrink-0 border-r border-slate-800 pr-4">
             <Users size={16} className="text-amber-500" />
@@ -162,7 +191,7 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className={`font-tactical font-black text-base uppercase truncate ${player.isUser ? 'text-amber-500' : 'text-white'}`}>{player.username}</h3>
                   {player.isUser && <span className="text-[8px] px-2 py-0.5 bg-amber-500 text-slate-950 rounded-lg font-black uppercase tracking-tighter">ME</span>}
-                  {player.xp === 0 && <span className="text-[8px] px-2 py-0.5 border border-emerald-500/40 text-emerald-500 rounded-lg font-black uppercase tracking-tighter animate-pulse">JUST JOINED</span>}
+                  {player.xp === 0 && <span className="text-[8px] px-2 py-0.5 border border-emerald-500/40 text-emerald-500 rounded-lg font-black uppercase tracking-tighter animate-pulse">RECRUIT</span>}
                 </div>
                 <div className="flex items-center gap-2 mt-1">
                   <Zap size={12} className="text-amber-500 fill-amber-500" />
@@ -170,7 +199,7 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({
                 </div>
               </div>
               <div className="hidden xs:block px-4 py-2 rounded-xl bg-slate-950 border border-slate-800 text-[9px] font-tactical font-black text-amber-500 tracking-widest uppercase shadow-inner">
-                DYNAMIC
+                {player.isUser ? 'MANUAL' : 'AUTO-SYNC'}
               </div>
             </div>
           );
@@ -180,7 +209,7 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({
       <div className="mt-10 p-6 border border-slate-800 rounded-[2rem] flex flex-col items-center gap-4 text-center bg-slate-900/40 shadow-sm">
          <Info size={24} className="text-slate-500" />
          <p className="text-[10px] font-tactical font-bold text-slate-500 uppercase tracking-widest leading-relaxed max-w-sm">
-           The <span className="text-amber-600 underline">Dynamic Grid</span> updates real-time. New commanders joining the mesh every 2 minutes. Stay active to secure your position.
+           The <span className="text-amber-600 underline">Dynamic Grid</span> updates real-time. Simulated commanders gain XP every 15 minutes. Secure your lead through tactical missions.
          </p>
       </div>
     </div>

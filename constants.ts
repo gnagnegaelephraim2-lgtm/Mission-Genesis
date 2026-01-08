@@ -1,5 +1,5 @@
 
-import { World, Chapter, Mission, Opportunity, Player, SkillProgress } from './types';
+import { World, Chapter, Mission, Opportunity, Challenge } from './types';
 
 export const WORLDS: World[] = [
   { id: 'health-science', subject: 'HEALTH', title: "Pulse Nexus", progress: 0, gradient: 'from-rose-500 to-rose-950', icon: '🧬', color: '#f43f5e' },
@@ -21,6 +21,93 @@ export const WORLDS: World[] = [
   { id: 'nanotech', subject: 'NANO', title: "Atomic Sahel", progress: 0, gradient: 'from-fuchsia-600 to-purple-900', icon: '💎', color: '#d946ef' },
 ];
 
+const KNOWLEDGE_BASE: Record<string, { topics: string[], problemContexts: string[], solutions: string[] }> = {
+  'computer-science': {
+    topics: ['Distributed Hash Tables', 'Consensus Algorithms', 'Neural Weight Quantization', 'Memory Leak Profiling', 'Load Balancing', 'Asymmetric Encryption'],
+    problemContexts: ['rural edge server synchronization', 'minimizing latency in mesh networks', 'optimizing mobile AI inferencing', 'preventing stack overflows in real-time kernels'],
+    solutions: ['RAFT Consensus', 'Consistent Hashing', 'Integer Quantization', 'Buffer Overflow Protection']
+  },
+  'health-science': {
+    topics: ['CRISPR-Cas9 Gene Editing', 'Pathogen Sequence Analysis', 'Telemedicine Latency Optimization', 'Biometric Signal Filtering', 'Epidemiological Modeling'],
+    problemContexts: ['identifying viral mutation origins', 'designing resilient remote surgery robots', 'deploying low-cost diagnostic arrays in drylands'],
+    solutions: ['Reverse Transcriptase Analysis', 'Haptic Feedback Buffering', 'Point-of-Care Microfluidics']
+  },
+  'physics': {
+    topics: ['Fluid Dynamics in Urban Heat Islands', 'Quantum Tunneling in Nanocircuits', 'Thermodynamic Efficiency of Solar Concentrators', 'Electromagnetic Shielding'],
+    problemContexts: ['cooling mega-city skyscrapers sustainably', 'harvesting solar energy in hazy regions', 'stabilizing local micro-grids against EMP interference'],
+    solutions: ['Passive Radiative Cooling', 'Photovoltaic Concentration', 'Faraday Cage Integration']
+  },
+  'agriculture': {
+    topics: ['Hydroponic Nutrient Balancing', 'Precision Irrigation Algos', 'Mycorrhizal Fungal Inoculation', 'Automated Pest Identification via CV'],
+    problemContexts: ['increasing yield in saline soils', 'optimizing water use in arid semi-desert zones', 'managing nitrogen cycles in vertical farms'],
+    solutions: ['Drip Osmosis Systems', 'Edge-AI Spectral Imaging', 'Carbon Sequestration via Soil Microbes']
+  }
+};
+
+// Fallback generator for subjects not in knowledge base
+const generateFallbackChallenge = (subject: string, pIdx: number, mIdx: number): Challenge => {
+  return {
+    question: `Phase ${pIdx + 1} Assessment: How would you optimize the ${subject} efficiency for a Tier ${mIdx + 1} deployment?`,
+    options: ['Resource Sharding', 'Parallel Synchronization', 'Adaptive Filtering', 'Direct Neural Link'],
+    correctIndex: (pIdx + mIdx) % 4,
+    explanation: 'Optimization requires balancing latency with reliability in a high-fidelity tactical environment.'
+  };
+};
+
+const generateChallenge = (worldId: string, pIdx: number, mIdx: number): Challenge => {
+  const base = KNOWLEDGE_BASE[worldId];
+  if (!base) return generateFallbackChallenge(worldId, pIdx, mIdx);
+
+  const topic = base.topics[(pIdx * 5 + mIdx) % base.topics.length];
+  const context = base.problemContexts[(pIdx + mIdx) % base.problemContexts.length];
+  const correctOption = base.solutions[(pIdx * 2 + mIdx) % base.solutions.length];
+  
+  const options = [correctOption, 'Legacy Batch Processing', 'Basic Linear Scaling', 'Manual Intervention'];
+  // Shuffle options
+  const shuffledOptions = [...options].sort(() => 0.5 - Math.random());
+  const correctIndex = shuffledOptions.indexOf(correctOption);
+
+  return {
+    question: `In a ${context} scenario, which ${topic} implementation strategy yields the highest operational stability for advanced users?`,
+    options: shuffledOptions,
+    correctIndex,
+    explanation: `Advanced ${topic} utilizes ${correctOption} to resolve traditional bottlenecks in ${context}.`
+  };
+};
+
+const MISSION_PREFIXES = ["Nova", "Apex", "Prime", "Void", "Titan", "Zenith", "Omega", "Flux", "Core", "Vector"];
+
+export const MISSIONS: Mission[] = WORLDS.flatMap((world, wIdx) => {
+  return Array.from({ length: 15 }).flatMap((_, pIdx) => {
+    return Array.from({ length: 5 }).map((__, mIdx) => {
+      const globalId = (wIdx * 10000) + (pIdx * 100) + mIdx + 1;
+      const difficulty = pIdx < 5 ? 'Medium' : pIdx < 10 ? 'Hard' : 'Expert';
+      const xpBase = difficulty === 'Medium' ? 800 : difficulty === 'Hard' ? 1600 : 2500;
+      
+      return {
+        id: globalId,
+        worldId: world.id,
+        title: `${MISSION_PREFIXES[(pIdx + mIdx) % 10]} Tact-0${mIdx + 1}`,
+        story: `Intelligence report: A critical bottleneck has been detected in the ${world.subject} sector during Phase ${pIdx + 1}. Regional mesh stability is compromised by a complex problem-solving anomaly. You must apply advanced practical knowledge to secure this node.`,
+        difficulty: difficulty as 'Medium' | 'Hard' | 'Expert',
+        xp: xpBase + (pIdx * 100) + (mIdx * 50),
+        locked: pIdx > 0 || mIdx > 0,
+        bgGradient: world.gradient,
+        completed: false,
+        environment: `High-fidelity ${world.subject} practical environment Phase ${pIdx + 1}.`,
+        type: (mIdx % 2 === 0) ? 'Rhythm' : 'Data-Stream',
+        objectives: [
+          `Authenticate Phase ${pIdx + 1} Tactical Credentials`,
+          `Analyze Sector Problem-Solving Constraints`,
+          `Implement Advanced ${world.subject} Solution`,
+          `Synchronize Neural Result with Global Mesh`
+        ],
+        challenge: generateChallenge(world.id, pIdx, mIdx)
+      };
+    });
+  });
+});
+
 export const CHAPTERS: Record<string, Chapter[]> = WORLDS.reduce((acc, world) => {
   acc[world.id] = Array.from({ length: 15 }).map((_, i) => ({
     id: `${world.id}-p${i + 1}`,
@@ -33,36 +120,7 @@ export const CHAPTERS: Record<string, Chapter[]> = WORLDS.reduce((acc, world) =>
   return acc;
 }, {} as Record<string, Chapter[]>);
 
-const MISSION_TITLES = ["Alpha Sync", "Beta Logic", "Gamma Mesh", "Delta Protocol", "Epsilon Core", "Zeta Uplink", "Eta Node", "Theta Pulse", "Iota Stream", "Sigma Secure"];
-
-// Generate 5 missions for each of the 15 phases for all 17 worlds
-// Total missions = 17 * 15 * 5 = 1275 missions
-export const MISSIONS: Mission[] = WORLDS.flatMap((world, wIdx) => {
-  return Array.from({ length: 15 }).flatMap((_, pIdx) => {
-    return Array.from({ length: 5 }).map((__, mIdx) => {
-      const globalMissionIdx = (pIdx * 5) + mIdx;
-      const difficulty = pIdx < 5 ? 'Medium' : pIdx < 10 ? 'Hard' : 'Expert';
-      const xpBase = difficulty === 'Medium' ? 800 : difficulty === 'Hard' ? 1600 : 2500;
-      
-      return {
-        id: (wIdx * 10000) + (pIdx * 100) + mIdx + 1,
-        worldId: world.id,
-        title: `${MISSION_TITLES[globalMissionIdx % 10]} Mod-0${mIdx + 1}`,
-        story: `Sector intelligence indicates tactical bottleneck at Phase ${pIdx + 1}, Tier ${mIdx + 1}. Resolve the ${world.subject} anomaly to ensure regional mesh stability.`,
-        difficulty: difficulty as 'Medium' | 'Hard' | 'Expert',
-        xp: xpBase + (pIdx * 100) + (mIdx * 50),
-        locked: pIdx > 0 || mIdx > 0,
-        bgGradient: world.gradient,
-        completed: false,
-        environment: `High-fidelity ${world.subject} tactical simulation Phase ${pIdx + 1}.`,
-        type: (mIdx % 2 === 0) ? 'Rhythm' : 'Data-Stream'
-      };
-    });
-  });
-});
-
 export const CHAPTER_MISSION_IDS: Record<string, number[]> = MISSIONS.reduce((acc, mission) => {
-  // Determine which phase this mission belongs to
   const phaseIdx = Math.floor((mission.id % 10000) / 100);
   const chapterId = `${mission.worldId}-p${phaseIdx + 1}`;
   if (!acc[chapterId]) acc[chapterId] = [];
@@ -75,20 +133,10 @@ export const OPPORTUNITIES: Opportunity[] = [
   { id: 2, name: "ALX Africa", category: 'Training', description: "Software engineering and data science training for Africa's top talent.", logo: "💻", recommended: true, url: "https://www.alxafrica.com/" },
   { id: 3, name: "Dell Young Leaders", category: 'Fellowship', description: "Support for high-potential students from low-income backgrounds.", logo: "💻", recommended: true, url: "https://www.dellyoungleaders.org/" },
   { id: 4, name: "Fulbright Africa", category: 'Fellowship', description: "Educational exchange program between Africa and the USA.", logo: "🗽", recommended: true, url: "https://fulbrightscholars.org/what-fulbright/opportunities" },
-  { id: 5, name: "UCT Program", category: 'University', description: "University of Cape Town - Africa's highest-ranked research university.", logo: "🏗️", recommended: true, url: "https://www.uct.ac.za/" },
-  { id: 101, name: "Makerere University", category: 'University', description: "Uganda's historical giant in medicine and social research.", logo: "🇺🇬", recommended: true, url: "https://www.mak.ac.ug/" },
-  { id: 102, name: "University of Lagos", category: 'University', description: "Nigeria's hub for creative and tech-enabled business.", logo: "🇳🇬", recommended: true, url: "https://unilag.edu.ng/" },
-  { id: 103, name: "University of Nairobi", category: 'University', description: "Kenya's leading institution for architectural and medical research.", logo: "🇰🇪", recommended: true, url: "https://uonbi.ac.ke/" },
-  { id: 104, name: "Wits University", category: 'University', description: "Global leader in deep-level mining and tech innovation.", logo: "💎", recommended: true, url: "https://www.wits.ac.za/" },
-  { id: 105, name: "Ashesi University", category: 'University', description: "Cultivating ethical leadership and critical thinking in Ghana.", logo: "🦁", recommended: true, url: "https://www.ashesi.edu.gh/" },
-  { id: 201, name: "Mandela Rhodes", category: 'Fellowship', description: "Building exceptional leadership capacity in African graduates.", logo: "🦁", recommended: true, url: "https://mandelarhodes.org/" },
-  { id: 202, name: "Mastercard Scholars", category: 'Fellowship', description: "Full scholarships for transformative leaders across Africa.", logo: "🤝", recommended: true, url: "https://mastercardfdn.org/" },
-  { id: 301, name: "Moringa School", category: 'Training', description: "Market-aligned software engineering training in Kenya.", logo: "🌳", recommended: true, url: "https://moringaschool.com/" },
-  { id: 330, name: "Zindi AI", category: 'Training', description: "The leading AI competition platform for Africa.", logo: "🏁", recommended: true, url: "https://zindi.africa/" },
-  { id: 331, name: "Data Science Nigeria", category: 'Training', description: "Building a world-class AI ecosystem for impact.", logo: "🤖", recommended: true, url: "https://www.datasciencenigeria.org/" }
+  { id: 330, name: "Zindi AI", category: 'Training', description: "The leading AI competition platform for Africa.", logo: "🏁", recommended: true, url: "https://zindi.africa/" }
 ];
 
-export const SKILLS: SkillProgress[] = [
+export const SKILLS = [
   { skill: "Problem Solver", progress: 0, badge: "Bronze", icon: "🎯" },
   { skill: "Systems Thinker", progress: 0, badge: "Bronze", icon: "👥" },
   { skill: "Innovator", progress: 0, badge: "Bronze", icon: "💡" }
