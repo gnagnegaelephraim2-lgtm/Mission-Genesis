@@ -59,6 +59,18 @@ const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({ mission, isCo
   
   const audioRef = useRef<AudioContext | null>(null);
   const particleContainerRef = useRef<HTMLDivElement>(null);
+
+  // CRITICAL: Reset state when mission changes to prevent success-state inheritance
+  useEffect(() => {
+    setStatus('idle');
+    setProgress(0);
+    setRhythmNodes([]);
+    setCombo(0);
+    setScore(0);
+    setParticles([]);
+    setDecryptionFeedback(null);
+    setAttemptCount(0);
+  }, [mission.id]);
   
   const playSFX = useCallback((freq: number, type: OscillatorType = 'sine', duration: number = 0.2, volume: number = 0.1) => {
     try {
@@ -84,7 +96,6 @@ const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({ mission, isCo
   }, []);
 
   const handleStartMission = () => {
-    // Robust status transition
     setDecryptionFeedback(null);
     setAttemptCount(0);
     setProgress(0);
@@ -486,7 +497,7 @@ const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({ mission, isCo
                   onClick={() => { if (onNextMission) onNextMission(); }}
                   className="flex-1 py-5 sm:py-9 rounded-2xl sm:rounded-[4rem] bg-amber-500 hover:bg-amber-400 text-slate-950 font-tactical font-black text-lg sm:text-3xl uppercase tracking-[0.2em] shadow-[0_30px_80px_rgba(245,158,11,0.5)] transition-all active:scale-95 flex items-center justify-center gap-3 sm:gap-6 group"
                 >
-                  NEXT MISSION
+                  NEXT
                   <ChevronRight size={28} strokeWidth={4} className="group-hover:translate-x-3 transition-transform sm:w-10 sm:h-10" />
                 </button>
               </div>
