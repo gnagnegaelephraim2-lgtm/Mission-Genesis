@@ -2,6 +2,7 @@
 import { World, Chapter, Mission, Opportunity, Challenge } from './types';
 
 export const WORLDS: World[] = [
+  { id: 'astronomy', subject: 'SPACE', title: "Cosmic Grid", progress: 0, gradient: 'from-violet-900 to-slate-950', icon: '🔭', color: '#7c3aed' },
   { id: 'health-science', subject: 'HEALTH', title: "Pulse Nexus", progress: 0, gradient: 'from-rose-500 to-rose-950', icon: '🧬', color: '#f43f5e' },
   { id: 'env-science', subject: 'ENVIRON', title: "Gaia's Shield", progress: 0, gradient: 'from-teal-400 to-emerald-900', icon: '🌍', color: '#14b8a6' },
   { id: 'computer-science', subject: 'CS', title: 'Neural Mesh', progress: 0, gradient: 'from-blue-600 to-indigo-950', icon: '💻', color: '#3b82f6' },
@@ -13,7 +14,6 @@ export const WORLDS: World[] = [
   { id: 'engineering', subject: 'ENG', title: "Titan's Forge", progress: 0, gradient: 'from-slate-600 to-slate-900', icon: '🏗️', color: '#64748b' },
   { id: 'robotics', subject: 'BOTX', title: "Automata Grid", progress: 0, gradient: 'from-violet-600 to-purple-950', icon: '🤖', color: '#8b5cf6' },
   { id: 'architecture', subject: 'ARCHI', title: "Skyline Lattice", progress: 0, gradient: 'from-indigo-500 to-slate-900', icon: '🏛️', color: '#6366f1' },
-  { id: 'astronomy', subject: 'SPACE', title: "Cosmic Grid", progress: 0, gradient: 'from-violet-900 to-slate-950', icon: '🔭', color: '#7c3aed' },
   { id: 'economics', subject: 'ECON', title: "Wealth Flow", progress: 0, gradient: 'from-emerald-500 to-teal-800', icon: '📊', color: '#10b981' },
   { id: 'energy', subject: 'ENERGY', title: "Volt Pulse", progress: 0, gradient: 'from-yellow-400 to-orange-900', icon: '🔋', color: '#fbbf24' },
   { id: 'marine-bio', subject: 'MARINE', title: "Abyssal Reef", progress: 0, gradient: 'from-blue-400 to-indigo-900', icon: '🐙', color: '#38bdf8' },
@@ -22,6 +22,11 @@ export const WORLDS: World[] = [
 ];
 
 const KNOWLEDGE_BASE: Record<string, { topics: string[], problemContexts: string[], solutions: string[] }> = {
+  'astronomy': {
+    topics: ['Orbital Resonance Calibration', 'Spectroscopic Data Filtering', 'Gravitational Lensing Analysis', 'Star Tracker Alignment', 'Pulsar Timing Arrays'],
+    problemContexts: ['detecting exoplanets in noisy stellar fields', 'stabilizing deep-space communication relays', 'mapping dark matter distributions in the Sahel sector'],
+    solutions: ['Bayesian Phase Folding', 'Fourier Signal Extraction', 'Adaptive Optics Correction']
+  },
   'computer-science': {
     topics: ['Distributed Hash Tables', 'Consensus Algorithms', 'Neural Weight Quantization', 'Memory Leak Profiling', 'Load Balancing', 'Asymmetric Encryption'],
     problemContexts: ['rural edge server synchronization', 'minimizing latency in mesh networks', 'optimizing mobile AI inferencing', 'preventing stack overflows in real-time kernels'],
@@ -44,7 +49,6 @@ const KNOWLEDGE_BASE: Record<string, { topics: string[], problemContexts: string
   }
 };
 
-// Fallback generator for subjects not in knowledge base
 const generateFallbackChallenge = (subject: string, pIdx: number, mIdx: number): Challenge => {
   return {
     question: `Phase ${pIdx + 1} Assessment: How would you optimize the ${subject} efficiency for a Tier ${mIdx + 1} deployment?`,
@@ -63,7 +67,6 @@ const generateChallenge = (worldId: string, pIdx: number, mIdx: number): Challen
   const correctOption = base.solutions[(pIdx * 2 + mIdx) % base.solutions.length];
   
   const options = [correctOption, 'Legacy Batch Processing', 'Basic Linear Scaling', 'Manual Intervention'];
-  // Shuffle options
   const shuffledOptions = [...options].sort(() => 0.5 - Math.random());
   const correctIndex = shuffledOptions.indexOf(correctOption);
 

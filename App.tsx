@@ -20,21 +20,16 @@ import {
   User, 
   Zap, 
   ChevronLeft,
-  Cpu,
-  VolumeX,
-  Music4,
   Users,
   SkipForward,
-  SkipBack,
   Headphones,
-  ListMusic,
-  X,
+  VolumeX,
   Music
 } from 'lucide-react';
 
 const SYNC_ENDPOINT = `https://jsonblob.com/api/jsonBlob/1344400262145327104`;
 
-// Audio Utils
+// Audio Encoding/Decoding Utils
 function decode(base64: string) {
   const binaryString = atob(base64);
   const len = binaryString.length;
@@ -76,19 +71,11 @@ const App: React.FC = () => {
   const [notification, setNotification] = useState<{message: string, type: 'info' | 'success'} | null>(null);
   const [isAudioActive, setIsAudioActive] = useState(false);
   const [trackId, setTrackId] = useState(1); 
-  const [showPlaylist, setShowPlaylist] = useState(false);
   
   const audioContextRef = useRef<AudioContext | null>(null);
   const sequencerIntervalRef = useRef<number | null>(null);
   const activeNodesRef = useRef<AudioNode[]>([]);
   const welcomePlayedRef = useRef(false);
-
-  const formatTrackNum = (num: number) => {
-    if (num < 10) return `000${num}`;
-    if (num < 100) return `00${num}`;
-    if (num < 1000) return `0${num}`;
-    return `${num}`;
-  };
 
   const [userProfile, setUserProfile] = useState(() => {
     const saved = localStorage.getItem('mission_genesis_profile');
@@ -110,6 +97,45 @@ const App: React.FC = () => {
     }
     return audioContextRef.current;
   }, []);
+
+  const playWelcomeMessage = useCallback(async () => {
+    if (welcomePlayedRef.current) return;
+    welcomePlayedRef.current = true;
+
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash-preview-tts",
+        contents: [{ parts: [{ text: 'Welcome to Mission Genesis. The mesh is active. Good luck, Commander.' }] }],
+        config: {
+          responseModalities: [Modality.AUDIO],
+          speechConfig: {
+            voiceConfig: {
+              prebuiltVoiceConfig: { voiceName: 'Kore' },
+            },
+          },
+        },
+      });
+
+      const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+      if (base64Audio) {
+        const ctx = getAudioContext();
+        const audioBuffer = await decodeAudioData(decode(base64Audio), ctx, 24000, 1);
+        const source = ctx.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(ctx.destination);
+        source.start();
+      }
+    } catch (e) {
+      console.error("Welcome message failed", e);
+    }
+  }, [getAudioContext]);
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      playWelcomeMessage();
+    }
+  }, [isLoggedIn, playWelcomeMessage]);
 
   const playInteractionSFX = useCallback((freq: number, type: OscillatorType = 'sine', duration: number = 0.1, volume: number = 0.05) => {
     const ctx = getAudioContext();
@@ -135,18 +161,6 @@ const App: React.FC = () => {
     osc.stop(ctx.currentTime + duration);
   }, [getAudioContext]);
 
-  useEffect(() => {
-    const handleGlobalClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      const clickable = target.closest('button') || target.closest('a') || target.getAttribute('role') === 'button';
-      if (clickable) {
-        playInteractionSFX(600, 'sine', 0.08, 0.03);
-      }
-    };
-    window.addEventListener('click', handleGlobalClick);
-    return () => window.removeEventListener('click', handleGlobalClick);
-  }, [playInteractionSFX]);
-
   const stopAudio = useCallback(() => {
     if (sequencerIntervalRef.current) clearInterval(sequencerIntervalRef.current);
     sequencerIntervalRef.current = null;
@@ -158,67 +172,65 @@ const App: React.FC = () => {
     const ctx = getAudioContext();
     if (ctx.state === 'suspended') ctx.resume();
 
-    activeNodesRef.current.forEach(node => { try { (node as any).stop(); } catch (e) {} });
-    activeNodesRef.current = [];
-    if (sequencerIntervalRef.current) clearInterval(sequencerIntervalRef.current);
+    stopAudio();
 
-    const bpm = 85 + ((seed * 7) % 45); 
+    // Use seed to determine variety in tempo, scales, and percussion
+    const bpm = 80 + ((seed * 13) % 45); 
     const secondsPerBeat = 60 / bpm;
     const subdivision = secondsPerBeat / 4; 
     let currentStep = 0;
 
-    const rootFreqs = [32.70, 34.65, 36.71, 38.89, 41.20, 43.65, 48.99, 51.91];
+    const rootFreqs = [32.70, 36.71, 41.20, 48.99, 55.00, 61.74];
     const root = rootFreqs[seed % rootFreqs.length];
-    const scaleTypes = [[1, 1.25, 1.5, 1.75], [1, 1.18, 1.5, 1.68], [1, 1.06, 1.41, 1.58], [1, 1.33, 1.5, 2.0]];
+    const scaleTypes = [[1, 1.25, 1.5, 1.75], [1, 1.18, 1.5, 1.68], [1, 1.33, 1.5, 2.0]];
     const baseScale = scaleTypes[seed % scaleTypes.length].map(v => root * v);
-    const drumStyle = seed % 4;
-    const hiHatSwing = (seed % 10) / 100;
+    const drumStyle = seed % 3;
 
     const playKick = (time: number, accent = 1.0) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(180, time);
-      osc.frequency.exponentialRampToValueAtTime(40, time + 0.15);
-      gain.gain.setValueAtTime(0.4 * accent, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.2);
+      osc.frequency.setValueAtTime(140 + (seed % 30), time);
+      osc.frequency.exponentialRampToValueAtTime(40, time + 0.18);
+      gain.gain.setValueAtTime(0.45 * accent, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.25);
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start(time);
-      osc.stop(time + 0.2);
+      osc.stop(time + 0.25);
     };
 
     const playSnare = (time: number, accent = 1.0) => {
       const noise = ctx.createBufferSource();
-      const bufferSize = ctx.sampleRate * 0.12;
+      const bufferSize = ctx.sampleRate * 0.15;
       const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
       const data = buffer.getChannelData(0);
       for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * accent;
       noise.buffer = buffer;
       const filter = ctx.createBiquadFilter();
-      filter.type = 'highpass';
-      filter.frequency.setValueAtTime(drumStyle === 3 ? 1800 : 1200, time);
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(1200 + (seed % 800), time);
       const gain = ctx.createGain();
-      gain.gain.setValueAtTime(drumStyle === 3 ? 0.1 : 0.2, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.15);
+      gain.gain.setValueAtTime(0.18 * accent, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.2);
       noise.connect(filter);
       filter.connect(gain);
       gain.connect(ctx.destination);
       noise.start(time);
-      noise.stop(time + 0.15);
+      noise.stop(time + 0.2);
     };
 
     const playHiHat = (time: number, accent = false) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = drumStyle === 2 ? 'sawtooth' : 'square';
-      osc.frequency.setValueAtTime(12000, time);
-      gain.gain.setValueAtTime(accent ? 0.05 : 0.02, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.04);
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(11000 + (seed % 4000), time);
+      gain.gain.setValueAtTime(accent ? 0.03 : 0.01, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.03);
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start(time);
-      osc.stop(time + 0.05);
+      osc.stop(time + 0.04);
     };
 
     const playSubBass = (time: number, freq: number, length: number) => {
@@ -227,7 +239,7 @@ const App: React.FC = () => {
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(freq, time);
       gain.gain.setValueAtTime(0, time);
-      gain.gain.linearRampToValueAtTime(0.2, time + 0.05);
+      gain.gain.linearRampToValueAtTime(0.18, time + 0.08);
       gain.gain.exponentialRampToValueAtTime(0.001, time + length);
       osc.connect(gain);
       gain.connect(ctx.destination);
@@ -238,23 +250,19 @@ const App: React.FC = () => {
 
     sequencerIntervalRef.current = window.setInterval(() => {
       const startTime = ctx.currentTime + 0.05;
-      const kickPattern = seed % 3 === 0 ? [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0] : [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0];
-      if (kickPattern[currentStep % 16]) playKick(startTime, currentStep % 16 === 0 ? 1.2 : 1.0);
+      const kickPattern = seed % 2 === 0 ? [1,0,0,0, 0,1,0,0, 1,0,0,0, 0,0,1,0] : [1,0,0,0, 0,0,1,0, 0,0,1,0, 1,0,0,0];
+      if (kickPattern[currentStep % 16]) playKick(startTime, currentStep % 16 === 0 ? 1.2 : 0.8);
       if (currentStep % 16 === 8) playSnare(startTime);
-      if (drumStyle === 1 && currentStep % 16 === 14 && (seed % 5 === 0)) playSnare(startTime, 0.5);
-      const hiHatDensity = (seed % 4) === 0 ? 2 : (seed % 4) === 1 ? 4 : 1; 
-      if (currentStep % hiHatDensity === 0) {
-        const swungTime = startTime + (currentStep % 2 === 1 ? hiHatSwing : 0);
-        playHiHat(swungTime, currentStep % 4 === 0);
-      }
-      const bassTriggers = [0, 6, 10, 13];
+      if (currentStep % 2 === 0) playHiHat(startTime, currentStep % 4 === 0);
+      
+      const bassTriggers = [0, 4, 8, 12];
       if (bassTriggers.includes(currentStep % 16)) {
-        const noteIdx = (Math.floor(currentStep / 16) + (seed % 4)) % baseScale.length;
-        playSubBass(startTime, baseScale[noteIdx], secondsPerBeat * (seed % 2 === 0 ? 1 : 0.5));
+        const noteIdx = (Math.floor(currentStep / 16) + (seed % 3)) % baseScale.length;
+        playSubBass(startTime, baseScale[noteIdx], secondsPerBeat * 0.8);
       }
       currentStep++;
     }, subdivision * 1000);
-  }, [getAudioContext]);
+  }, [getAudioContext, stopAudio]);
 
   const toggleAudio = () => {
     if (isAudioActive) {
@@ -263,9 +271,18 @@ const App: React.FC = () => {
       playInteractionSFX(300, 'sine', 0.2, 0.04);
     } else {
       setIsAudioActive(true);
-      startProceduralRap(trackId - 1);
+      startProceduralRap(trackId);
       playInteractionSFX(800, 'square', 0.15, 0.04);
     }
+  };
+
+  const skipTrack = () => {
+    const nextId = trackId + 1;
+    setTrackId(nextId);
+    if (isAudioActive) {
+      startProceduralRap(nextId);
+    }
+    playInteractionSFX(1200, 'sine', 0.05, 0.03);
   };
 
   const userXp = useMemo(() => {
@@ -378,45 +395,54 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="flex justify-center h-screen w-screen overflow-hidden bg-[#010409] text-white">
+    <div className="flex justify-center h-screen w-screen overflow-hidden bg-[#010409] text-white font-inter">
       {notification && (
         <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[200] px-8 py-4 rounded-2xl bg-slate-900 border border-amber-500 text-amber-500 font-tactical font-black text-xs uppercase tracking-widest animate-in slide-in-from-top-4 shadow-2xl">
           {notification.message}
         </div>
       )}
-      <div className="w-full max-w-screen-xl h-screen flex flex-col relative border-x border-slate-800/40 bg-[#020617]/50">
-        <header className="px-6 pt-10 pb-4 flex items-center justify-between z-50 shrink-0">
+      <div className="w-full h-screen flex flex-col relative bg-[#020617]/50 max-w-screen-2xl mx-auto border-x border-slate-800/40">
+        <header className="px-4 sm:px-6 md:px-10 pt-6 sm:pt-10 pb-4 flex items-center justify-between z-50 shrink-0">
           {isLoggedIn ? (
-            <div className="flex w-full items-center justify-between">
-              <div className="flex items-center gap-4">
+            <div className="flex w-full items-center justify-between gap-4">
+              <div className="flex items-center gap-2 sm:gap-4">
                 {navigationStack.length > 0 && (
                   <button onClick={() => { setNavigationStack(navigationStack.slice(0, -1)); }} className="p-2 border rounded-xl bg-slate-900/60 border-slate-700 text-amber-500 active:scale-95 transition-all">
-                    <ChevronLeft size={24} />
+                    <ChevronLeft size={20} className="sm:w-6 sm:h-6" />
                   </button>
                 )}
-                <div className="px-4 py-2 rounded-2xl border border-amber-500/40 bg-slate-900/60 flex items-center gap-3 shadow-md">
-                  <Zap size={16} className={`text-amber-500 fill-amber-500 ${isSyncing ? 'animate-bounce' : 'animate-pulse'}`} />
-                  <span className="font-tactical text-xs font-black text-amber-500">{userXp.toLocaleString()} XP • LVL {userLevel}</span>
+                <div className="px-3 sm:px-4 py-2 rounded-2xl border border-amber-500/40 bg-slate-900/60 flex items-center gap-2 sm:gap-3 shadow-md whitespace-nowrap">
+                  <Zap size={14} className={`text-amber-500 fill-amber-500 sm:w-4 sm:h-4 ${isSyncing ? 'animate-bounce' : 'animate-pulse'}`} />
+                  <span className="font-tactical text-[10px] sm:text-xs font-black text-amber-500">{userXp.toLocaleString()} XP • LVL {userLevel}</span>
                 </div>
               </div>
-              <div className="flex items-center gap-2 sm:gap-3">
+              <div className="flex items-center gap-2">
                 <button 
                   onClick={toggleAudio} 
-                  className={`px-4 py-2.5 transition-all flex items-center gap-2 border rounded-xl shadow-lg active:scale-95 ${
+                  className={`px-3 sm:px-4 py-2 sm:py-2.5 transition-all flex items-center gap-2 border rounded-xl shadow-lg active:scale-95 ${
                     isAudioActive 
                     ? 'bg-amber-500 text-slate-950 border-amber-600 shadow-amber-500/20' 
                     : 'bg-slate-900 text-slate-500 border-slate-800'
                   }`}
                 >
-                  {isAudioActive ? <Headphones size={20} className="animate-pulse" /> : <Music size={20} />}
-                  <span className="text-[10px] font-tactical font-black uppercase tracking-widest">
+                  {isAudioActive ? <Headphones size={18} className="animate-pulse" /> : <Music size={18} />}
+                  <span className="text-[9px] sm:text-[10px] font-tactical font-black uppercase tracking-widest hidden xs:inline">
                     {isAudioActive ? `BEAT #${trackId}` : 'RADIO OFF'}
                   </span>
                 </button>
+                {isAudioActive && (
+                   <button 
+                    onClick={skipTrack}
+                    className="p-2 sm:p-2.5 bg-slate-900/80 border border-slate-800 text-amber-500 rounded-xl hover:bg-slate-800 transition-all active:scale-95 shadow-xl"
+                    title="Next Track"
+                   >
+                     <SkipForward size={18} />
+                   </button>
+                )}
               </div>
             </div>
           ) : (
-            <div className="flex w-full items-center justify-center"><h1 className="text-2xl font-tactical font-black text-amber-500 tracking-[0.2em]">MISSION GENESIS</h1></div>
+            <div className="flex w-full items-center justify-center"><h1 className="text-xl sm:text-2xl font-tactical font-black text-amber-500 tracking-[0.2em]">MISSION GENESIS</h1></div>
           )}
         </header>
 
@@ -425,13 +451,13 @@ const App: React.FC = () => {
         </main>
 
         {isLoggedIn && (
-          <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-3rem)] max-w-lg backdrop-blur-3xl border border-slate-700/50 bg-slate-950/80 rounded-3xl px-4 py-4 flex justify-between items-center z-50 shadow-3xl">
+          <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-lg backdrop-blur-3xl border border-slate-700/50 bg-slate-950/80 rounded-3xl px-2 sm:px-4 py-3 sm:py-4 flex justify-between items-center z-50 shadow-3xl">
             {[ { id: 'home', icon: Home, label: 'Ops' }, { id: 'opportunities', icon: Briefcase, label: 'Growth' }, { id: 'community', icon: Users, label: 'Mesh' }, { id: 'leaderboard', icon: Trophy, label: 'Elite' }, { id: 'profile', icon: User, label: 'ID' } ].map((tab) => {
               const isActive = activeTab === tab.id && navigationStack.length === 0;
               return (
                 <button key={tab.id} onClick={() => { setNavigationStack([]); setActiveTab(tab.id as TabType); }} className={`flex flex-col items-center gap-1 flex-1 transition-all ${isActive ? 'text-amber-500' : 'text-slate-500'}`}>
-                  <div className={`p-3 rounded-2xl transition-all ${isActive ? 'bg-amber-500 text-slate-950 shadow-[0_0_25px_rgba(245,158,11,0.5)] -translate-y-2' : 'hover:bg-slate-900/40'}`}><tab.icon size={22} strokeWidth={isActive ? 3 : 2} /></div>
-                  <span className={`text-[8px] uppercase font-tactical font-black tracking-widest transition-opacity duration-300 ${isActive ? 'opacity-100' : 'opacity-0'}`}>{tab.label}</span>
+                  <div className={`p-2 sm:p-3 rounded-2xl transition-all ${isActive ? 'bg-amber-500 text-slate-950 shadow-[0_0_25px_rgba(245,158,11,0.5)] -translate-y-1.5 sm:-translate-y-2' : 'hover:bg-slate-900/40'}`}><tab.icon size={20} strokeWidth={isActive ? 3 : 2} className="sm:w-5.5 sm:h-5.5" /></div>
+                  <span className={`text-[7px] sm:text-[8px] uppercase font-tactical font-black tracking-widest transition-opacity duration-300 ${isActive ? 'opacity-100' : 'opacity-0'}`}>{tab.label}</span>
                 </button>
               );
             })}

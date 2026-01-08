@@ -23,7 +23,8 @@ import {
   AlertCircle,
   RefreshCw,
   ArrowLeft,
-  FastForward
+  FastForward,
+  ChevronLeft
 } from 'lucide-react';
 
 interface MissionDetailScreenProps {
@@ -59,29 +60,39 @@ const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({ mission, isCo
   const audioRef = useRef<AudioContext | null>(null);
   const particleContainerRef = useRef<HTMLDivElement>(null);
   
+  const playSFX = useCallback((freq: number, type: OscillatorType = 'sine', duration: number = 0.2, volume: number = 0.1) => {
+    try {
+      if (!audioRef.current) {
+        audioRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+      }
+      if (audioRef.current.state === 'suspended') {
+        audioRef.current.resume();
+      }
+      const osc = audioRef.current.createOscillator();
+      const gain = audioRef.current.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, audioRef.current.currentTime);
+      gain.gain.setValueAtTime(volume, audioRef.current.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioRef.current.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(audioRef.current.destination);
+      osc.start();
+      osc.stop(audioRef.current.currentTime + duration);
+    } catch (e) {
+      console.warn("SFX error", e);
+    }
+  }, []);
+
   const handleStartMission = () => {
-    setStatus('decryption');
+    // Robust status transition
     setDecryptionFeedback(null);
     setAttemptCount(0);
-    if (!audioRef.current) {
-      audioRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-    }
+    setProgress(0);
+    setCombo(0);
+    setScore(0);
+    setStatus('decryption');
     playSFX(800, 'square', 0.1, 0.05);
   };
-
-  const playSFX = useCallback((freq: number, type: OscillatorType = 'sine', duration: number = 0.2, volume: number = 0.1) => {
-    if (!audioRef.current) return;
-    const osc = audioRef.current.createOscillator();
-    const gain = audioRef.current.createGain();
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, audioRef.current.currentTime);
-    gain.gain.setValueAtTime(volume, audioRef.current.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, audioRef.current.currentTime + duration);
-    osc.connect(gain);
-    gain.connect(audioRef.current.destination);
-    osc.start();
-    osc.stop(audioRef.current.currentTime + duration);
-  }, []);
 
   const handleAnswer = (index: number) => {
     if (decryptionFeedback?.revealed) return;
@@ -92,7 +103,7 @@ const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({ mission, isCo
       playSFX(1200, 'sine', 0.4, 0.1);
       const decryptionBonus = Math.max(50, 500 - (attemptCount * 150));
       setScore(s => s + decryptionBonus); 
-      setTimeout(() => setStatus('executing'), 2000);
+      setTimeout(() => setStatus('executing'), 1500);
     } else {
       setDecryptionFeedback({ correct: false, revealed: true });
       playSFX(150, 'sawtooth', 0.5, 0.1);
@@ -140,12 +151,12 @@ const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({ mission, isCo
           { id: Math.random(), x: 15 + Math.random() * 70, y: 15 + Math.random() * 70, life: 1, type: (Math.random() > 0.8 ? 'pulse' : 'beat') }
         ].slice(-8));
         playSFX(150, 'sine', 0.05, 0.02);
-      }, 800);
+      }, 700);
 
       const lifeInterval = setInterval(() => {
         setRhythmNodes(prev => prev.map(n => ({ ...n, life: n.life - 0.015 })).filter(n => n.life > 0));
         setProgress(prev => {
-          const next = prev + 0.45;
+          const next = prev + 0.6;
           if (next >= 100) {
             clearInterval(spawnInterval);
             clearInterval(lifeInterval);
@@ -172,11 +183,11 @@ const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({ mission, isCo
     setCombo(c => c + 1);
     const bonus = type === 'pulse' ? 50 : 20;
     setScore(s => s + bonus + (combo * 5));
-    setProgress(p => Math.min(p + 3, 100)); 
+    setProgress(p => Math.min(p + 3.5, 100)); 
     
     const frequencies = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25];
     const note = frequencies[combo % frequencies.length];
-    playSFX(note, 'triangle', 0.25, 0.15);
+    playSFX(note, 'triangle', 0.2, 0.1);
   };
 
   const getRankData = () => {
@@ -195,11 +206,10 @@ const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({ mission, isCo
       playSFX(329.63, 'sawtooth', 0.4, 0.08); 
       playSFX(392.00, 'sawtooth', 0.4, 0.08); 
       setTimeout(() => {
-        playSFX(523.25, 'square', 0.6, 0.12); 
-        playSFX(659.25, 'square', 0.6, 0.12); 
-        playSFX(783.99, 'square', 0.8, 0.12); 
+        playSFX(523.25, 'square', 0.6, 0.1); 
+        playSFX(659.25, 'square', 0.6, 0.1); 
+        playSFX(783.99, 'square', 0.8, 0.1); 
       }, 400);
-      setTimeout(() => playSFX(1046.50, 'sawtooth', 1.2, 0.15), 800);
     }
   }, [status, mission.id, mission.worldId, onComplete, playSFX]);
 
@@ -229,13 +239,13 @@ const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({ mission, isCo
                 NEURAL ASSESSMENT READY
               </div>
            </div>
-           <h1 className="text-3xl sm:text-5xl md:text-6xl font-tactical font-black text-white italic uppercase tracking-tighter leading-none break-words">
+           <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-tactical font-black text-white italic uppercase tracking-tighter leading-none break-words">
              {mission.title}
            </h1>
         </div>
       </div>
 
-      <div className="p-4 sm:p-8 max-w-5xl mx-auto w-full space-y-8 sm:space-y-12 pb-32">
+      <div className="p-4 sm:p-8 max-w-5xl mx-auto w-full space-y-6 sm:space-y-12 pb-32">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
            {[
              { label: 'Rewards', val: `+${mission.xp} XP`, icon: Zap, color: 'text-amber-500' },
@@ -243,33 +253,40 @@ const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({ mission, isCo
              { label: 'Target', val: mission.worldId.split('-')[0].toUpperCase(), icon: Target, color: 'text-blue-500' },
              { label: 'Protocol', val: mission.type || 'Standard', icon: Music, color: 'text-purple-500' }
            ].map((stat, i) => (
-             <div key={i} className="bg-slate-900/40 border border-slate-800 p-4 sm:p-5 rounded-2xl sm:rounded-3xl flex flex-col items-center gap-1 sm:gap-2 hover:border-amber-500/20 transition-all group cursor-default shadow-lg">
-                <stat.icon size={18} className={`${stat.color} group-hover:scale-125 transition-transform`} />
-                <span className="text-[8px] sm:text-[9px] font-tactical font-black text-slate-500 uppercase tracking-widest">{stat.label}</span>
-                <span className="text-[10px] sm:text-sm font-tactical font-black text-white uppercase">{stat.val}</span>
+             <div key={i} className="bg-slate-900/40 border border-slate-800 p-3 sm:p-5 rounded-2xl sm:rounded-3xl flex flex-col items-center gap-1 sm:gap-2 hover:border-amber-500/20 transition-all group cursor-default shadow-lg">
+                <stat.icon size={16} className={`${stat.color} group-hover:scale-125 transition-transform sm:w-[18px] sm:h-[18px]`} />
+                <span className="text-[7px] sm:text-[9px] font-tactical font-black text-slate-500 uppercase tracking-widest">{stat.label}</span>
+                <span className="text-[9px] sm:text-sm font-tactical font-black text-white uppercase">{stat.val}</span>
              </div>
            ))}
         </div>
 
-        <section className="bg-slate-950/60 border border-slate-800 rounded-[1.5rem] sm:rounded-[2.5rem] p-6 sm:p-8 relative overflow-hidden group shadow-2xl">
+        <section className="bg-slate-950/60 border border-slate-800 rounded-[1.5rem] sm:rounded-[2.5rem] p-5 sm:p-8 relative overflow-hidden group shadow-2xl">
            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 blur-3xl rounded-full"></div>
            <div className="flex items-center gap-3 mb-4 sm:mb-6">
               <div className="w-1.5 h-4 bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]"></div>
-              <h3 className="text-[10px] sm:text-xs font-tactical font-black text-white tracking-widest uppercase italic">Sector Mission Intel</h3>
+              <h3 className="text-[8px] sm:text-xs font-tactical font-black text-white tracking-widest uppercase italic">Sector Mission Intel</h3>
            </div>
-           <p className="text-base sm:text-xl md:text-2xl text-slate-300 font-medium italic leading-relaxed">"{mission.story}"</p>
+           <p className="text-sm sm:text-xl md:text-2xl text-slate-300 font-medium italic leading-relaxed">"{mission.story}"</p>
         </section>
 
         {status === 'idle' && (
-          <div className="flex justify-center pt-4 sm:pt-8">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 pt-4 sm:pt-8 px-4">
+            <button 
+              onClick={onNextMission}
+              className="w-full max-w-[240px] py-4 rounded-xl sm:rounded-[2rem] bg-slate-900 border border-slate-800 text-slate-400 font-tactical font-black text-xs sm:text-sm uppercase tracking-widest hover:text-white hover:border-slate-600 transition-all active:scale-95 flex items-center justify-center gap-3 group"
+            >
+              SKIP SECTOR
+              <FastForward size={16} className="group-hover:translate-x-1 transition-transform" />
+            </button>
             <button 
               onClick={handleStartMission}
-              className="w-full max-w-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-tactical font-black text-lg sm:text-2xl py-5 sm:py-7 rounded-2xl sm:rounded-[2.5rem] shadow-[0_20px_60px_rgba(245,158,11,0.3)] flex items-center justify-center gap-3 sm:gap-4 transition-all group active:scale-95 overflow-hidden relative"
+              className="w-full max-w-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-tactical font-black text-base sm:text-2xl py-4 sm:py-7 rounded-xl sm:rounded-[2.5rem] shadow-[0_15px_45px_rgba(245,158,11,0.3)] flex items-center justify-center gap-3 sm:gap-4 transition-all group active:scale-95 overflow-hidden relative"
             >
               <div className="absolute inset-0 bg-white/20 -translate-x-full group-hover:translate-x-full transition-transform duration-700 skew-x-12"></div>
-              {isCompleted ? <RotateCcw size={24} className="sm:w-7 sm:h-7" /> : <Play size={24} className="fill-slate-950 sm:w-7 sm:h-7" />}
+              {isCompleted ? <RotateCcw size={20} className="sm:w-7 sm:h-7" /> : <Play size={20} className="fill-slate-950 sm:w-7 sm:h-7" />}
               {isCompleted ? 'RE-ENGAGE NODE' : 'INITIATE NEURAL UPLINK'}
-              <ChevronRight size={24} strokeWidth={3} className="group-hover:translate-x-2 transition-transform sm:w-7 sm:h-7" />
+              <ChevronRight size={20} strokeWidth={3} className="group-hover:translate-x-2 transition-transform sm:w-7 sm:h-7" />
             </button>
           </div>
         )}
@@ -291,11 +308,6 @@ const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({ mission, isCo
                   <Terminal size={20} className="text-amber-500 animate-pulse" />
                   <span className="text-[10px] sm:text-xs font-tactical font-black text-slate-500 tracking-[0.4em] uppercase">Neural Decryption Protocol</span>
                 </div>
-                {attemptCount > 0 && (
-                   <div className="px-3 py-1 bg-rose-500/10 border border-rose-500/30 rounded-lg text-[10px] font-tactical font-black text-rose-500 uppercase tracking-widest">
-                     Attempt #{attemptCount + 1} // Rewards Reduced
-                   </div>
-                )}
               </div>
               
               <h3 className="text-xl sm:text-3xl font-tactical font-black text-white leading-tight uppercase italic tracking-tighter mb-10">
@@ -402,9 +414,9 @@ const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({ mission, isCo
         <div className="fixed inset-0 z-[250] flex flex-col bg-[#010409]/98 backdrop-blur-3xl overflow-y-auto custom-scrollbar animate-in zoom-in-105 duration-700">
            <button 
              onClick={() => setStatus('idle')}
-             className="absolute top-8 left-8 p-3 bg-slate-900/80 border border-amber-500/40 text-amber-500 rounded-xl hover:bg-amber-500 hover:text-slate-950 transition-all active:scale-90 shadow-2xl z-[260]"
+             className="absolute top-6 sm:top-8 left-6 sm:left-8 p-2.5 sm:p-3 bg-slate-900/80 border border-amber-500/40 text-amber-500 rounded-xl hover:bg-amber-500 hover:text-slate-950 transition-all active:scale-90 shadow-2xl z-[260]"
            >
-              <ArrowLeft size={24} strokeWidth={3} />
+              <ArrowLeft size={20} strokeWidth={3} className="sm:w-6 sm:h-6" />
            </button>
 
            <div ref={particleContainerRef} className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -413,47 +425,47 @@ const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({ mission, isCo
               ))}
            </div>
            
-           <div className="max-w-4xl mx-auto w-full px-4 sm:px-6 py-12 sm:py-20 flex flex-col items-center justify-center min-h-full">
-              <div className="relative mb-12 sm:mb-20">
-                 <div className="w-40 h-40 sm:w-56 md:w-72 aspect-square rounded-[2rem] sm:rounded-[4rem] border-2 border-white/10 bg-slate-900 flex items-center justify-center shadow-[0_0_80px_rgba(245,158,11,0.3)] transform rotate-12 animate-[victory-float_6s_infinite_ease-in-out] relative z-10">
-                    <Trophy size={60} className="text-amber-500 sm:w-40 sm:h-40" />
+           <div className="max-w-4xl mx-auto w-full px-4 sm:px-6 py-10 sm:py-20 flex flex-col items-center justify-center min-h-full">
+              <div className="relative mb-8 sm:mb-20">
+                 <div className="w-24 h-24 sm:w-56 md:w-72 aspect-square rounded-2xl sm:rounded-[4rem] border-2 border-white/10 bg-slate-900 flex items-center justify-center shadow-[0_0_80px_rgba(245,158,11,0.3)] transform rotate-12 animate-[victory-float_6s_infinite_ease-in-out] relative z-10">
+                    <Trophy size={40} className="text-amber-500 sm:w-40 sm:h-40" />
                  </div>
               </div>
-              <div className="text-center mb-10 sm:mb-16">
-                 <h2 className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-tactical font-black text-white tracking-tighter uppercase italic leading-[0.85] sm:leading-[0.75]">
+              <div className="text-center mb-8 sm:mb-16">
+                 <h2 className="text-3xl sm:text-7xl md:text-8xl lg:text-9xl font-tactical font-black text-white tracking-tighter uppercase italic leading-[0.85] sm:leading-[0.75]">
                     SECTOR <br/><span className="text-amber-500 drop-shadow-[0_0_40px_rgba(245,158,11,0.6)]">STABLE</span>
                  </h2>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8 w-full max-w-3xl mb-12 sm:mb-16 px-4">
-                 <div className="bg-slate-900/80 border border-white/5 p-6 sm:p-10 rounded-2xl sm:rounded-[3.5rem] flex flex-col items-center shadow-3xl backdrop-blur-xl">
-                    <span className="text-[8px] sm:text-[10px] font-tactical font-black text-slate-500 tracking-[0.4em] uppercase mb-2">Uplink XP Yield</span>
-                    <div className="flex items-center gap-3">
-                       <Zap size={24} className="text-amber-500 fill-amber-500 animate-pulse" />
-                       <span className="text-4xl sm:text-7xl font-tactical font-black text-white leading-none">+{mission.xp + score}</span>
+              <div className="grid grid-cols-1 xs:grid-cols-2 gap-4 sm:gap-8 w-full max-w-3xl mb-8 sm:mb-16 px-4">
+                 <div className="bg-slate-900/80 border border-white/5 p-4 sm:p-10 rounded-2xl sm:rounded-[3.5rem] flex flex-col items-center shadow-3xl backdrop-blur-xl">
+                    <span className="text-[7px] sm:text-[10px] font-tactical font-black text-slate-500 tracking-[0.4em] uppercase mb-1 sm:mb-2 text-center">Uplink XP Yield</span>
+                    <div className="flex items-center gap-2 sm:gap-3">
+                       <Zap size={18} className="text-amber-500 fill-amber-500 animate-pulse sm:w-6 sm:h-6" />
+                       <span className="text-2xl sm:text-7xl font-tactical font-black text-white leading-none">+{mission.xp + score}</span>
                     </div>
                  </div>
-                 <div className="bg-slate-900/80 border border-white/5 p-6 sm:p-10 rounded-2xl sm:rounded-[3.5rem] flex flex-col items-center shadow-3xl backdrop-blur-xl">
-                    <span className="text-[8px] sm:text-[10px] font-tactical font-black text-slate-500 tracking-[0.4em] uppercase mb-2">Execution Grade</span>
-                    <span className={`text-4xl sm:text-7xl font-tactical font-black italic ${rank.color}`}>
+                 <div className="bg-slate-900/80 border border-white/5 p-4 sm:p-10 rounded-2xl sm:rounded-[3.5rem] flex flex-col items-center shadow-3xl backdrop-blur-xl">
+                    <span className="text-[7px] sm:text-[10px] font-tactical font-black text-slate-500 tracking-[0.4em] uppercase mb-1 sm:mb-2 text-center">Execution Grade</span>
+                    <span className={`text-2xl sm:text-7xl font-tactical font-black italic ${rank.color}`}>
                        {rank.label}
                     </span>
                  </div>
               </div>
 
-              <div className="w-full max-w-2xl px-4 mb-16 sm:mb-20">
-                <div className="bg-slate-950/90 border border-slate-800 rounded-[2rem] sm:rounded-[3rem] p-8 sm:p-12 shadow-3xl relative overflow-hidden backdrop-blur-2xl">
+              <div className="w-full max-w-2xl px-2 sm:px-4 mb-10 sm:mb-20">
+                <div className="bg-slate-950/90 border-2 border-slate-800 rounded-3xl sm:rounded-[3rem] p-6 sm:p-12 shadow-3xl relative overflow-hidden backdrop-blur-2xl">
                   <div className="flex items-center gap-3 mb-8 sm:mb-10">
-                    <div className="w-2 h-6 bg-emerald-500"></div>
+                    <div className="w-1.5 h-4 sm:w-2 sm:h-6 bg-emerald-500"></div>
                     <h3 className="text-sm sm:text-lg font-tactical font-black text-white tracking-[0.3em] uppercase italic">Operational Debrief</h3>
                   </div>
-                  <div className="space-y-8">
+                  <div className="space-y-6 sm:space-y-10">
                     {objectives.map((obj, i) => (
-                      <div key={i} className="flex items-center gap-4 sm:gap-8 group/item animate-in slide-in-from-left-6 duration-700" style={{ animationDelay: `${1200 + (i * 200)}ms` }}>
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center text-emerald-500 shrink-0 shadow-[0_0_15px_rgba(16,185,129,0.4)]">
+                      <div key={i} className="flex items-center gap-4 sm:gap-10 group/item animate-in slide-in-from-left-6 duration-700" style={{ animationDelay: `${1200 + (i * 200)}ms` }}>
+                        <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-full bg-emerald-500 border-2 border-emerald-400 flex items-center justify-center text-white shrink-0 shadow-[0_0_25px_rgba(16,185,129,0.5)]">
                           <Check size={24} strokeWidth={4} />
                         </div>
-                        <span className="text-xs sm:text-lg font-tactical font-black text-slate-300 uppercase italic tracking-tighter group-hover/item:text-white transition-colors block leading-tight">
+                        <span className="text-sm sm:text-2xl font-tactical font-black text-white uppercase italic tracking-tighter group-hover/item:text-emerald-400 transition-colors block leading-tight">
                           {obj}
                         </span>
                       </div>
@@ -462,19 +474,20 @@ const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({ mission, isCo
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-6 w-full max-w-3xl px-4">
+              <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 w-full max-w-3xl px-4 pb-16">
                  <button 
                   onClick={onReturnToOps || onBack}
-                  className="flex-1 py-6 sm:py-8 rounded-2xl sm:rounded-[4rem] bg-slate-900 border border-slate-800 text-slate-400 font-tactical font-black text-lg sm:text-xl uppercase tracking-[0.2em] shadow-xl hover:text-white hover:border-slate-700 transition-all active:scale-95 flex items-center justify-center gap-4 group"
+                  className="flex-1 py-4 sm:py-8 rounded-xl sm:rounded-[4rem] bg-slate-900 border border-slate-800 text-slate-400 font-tactical font-black text-xs sm:text-xl uppercase tracking-[0.2em] shadow-xl hover:text-white hover:border-slate-700 transition-all active:scale-95 flex items-center justify-center gap-2 sm:gap-4 group"
                 >
+                  <ChevronLeft size={20} className="sm:w-6 sm:h-6" />
                   RETURN TO OPS
                 </button>
                 <button 
-                  onClick={onNextMission}
-                  className="flex-1 py-6 sm:py-8 rounded-2xl sm:rounded-[4rem] bg-amber-500 hover:bg-amber-400 text-slate-950 font-tactical font-black text-xl sm:text-2xl uppercase tracking-[0.2em] shadow-[0_30px_70px_rgba(245,158,11,0.4)] transition-all active:scale-95 flex items-center justify-center gap-4 group"
+                  onClick={() => { if (onNextMission) onNextMission(); }}
+                  className="flex-1 py-5 sm:py-9 rounded-2xl sm:rounded-[4rem] bg-amber-500 hover:bg-amber-400 text-slate-950 font-tactical font-black text-lg sm:text-3xl uppercase tracking-[0.2em] shadow-[0_30px_80px_rgba(245,158,11,0.5)] transition-all active:scale-95 flex items-center justify-center gap-3 sm:gap-6 group"
                 >
                   NEXT MISSION
-                  <FastForward size={28} strokeWidth={4} className="group-hover:translate-x-3 transition-transform" />
+                  <ChevronRight size={28} strokeWidth={4} className="group-hover:translate-x-3 transition-transform sm:w-10 sm:h-10" />
                 </button>
               </div>
            </div>
