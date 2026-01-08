@@ -5,26 +5,21 @@ import {
   Zap, 
   ShieldAlert, 
   Target, 
-  MapPin, 
   ChevronRight, 
   Play, 
   Trophy, 
   RotateCcw, 
   Sparkles, 
   Activity, 
-  Music,
   Disc,
-  Waves,
   Check,
-  ClipboardList,
-  Star,
-  Terminal,
   BrainCircuit,
   AlertCircle,
   RefreshCw,
   ArrowLeft,
   FastForward,
-  ChevronLeft
+  ArrowRight,
+  Terminal
 } from 'lucide-react';
 
 interface MissionDetailScreenProps {
@@ -61,6 +56,7 @@ const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({ mission, isCo
   const particleContainerRef = useRef<HTMLDivElement>(null);
 
   // CRITICAL: Reset state when mission changes to prevent success-state inheritance
+  // This ensures that when 'NEXT' is clicked, the new mission starts in 'idle' mode (not solved).
   useEffect(() => {
     setStatus('idle');
     setProgress(0);
@@ -233,6 +229,20 @@ const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({ mission, isCo
 
   return (
     <div className="flex flex-col min-h-full relative overflow-x-hidden bg-[#010409] animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* HEADER WITH NEXT ARROW AT UPPER RIGHT */}
+      <div className="absolute top-6 right-6 z-[60] flex items-center gap-3">
+        {onNextMission && (
+          <button 
+            onClick={onNextMission}
+            className="p-3 bg-slate-900/60 border border-amber-500/30 text-amber-500 rounded-2xl hover:bg-amber-500 hover:text-slate-950 transition-all active:scale-90 shadow-2xl group flex items-center gap-2"
+            title="Next Mission"
+          >
+            <span className="text-[10px] font-tactical font-black tracking-widest uppercase hidden sm:inline">Next Mission</span>
+            <ArrowRight size={24} strokeWidth={3} className="group-hover:translate-x-1 transition-transform" />
+          </button>
+        )}
+      </div>
+
       <div className="relative h-48 sm:h-64 md:h-80 w-full overflow-hidden border-b border-slate-800">
         <img 
           src={`https://picsum.photos/seed/${mission.id + 101}/1200/800`} 
@@ -262,7 +272,7 @@ const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({ mission, isCo
              { label: 'Rewards', val: `+${mission.xp} XP`, icon: Zap, color: 'text-amber-500' },
              { label: 'Danger', val: mission.difficulty, icon: ShieldAlert, color: 'text-rose-500' },
              { label: 'Target', val: mission.worldId.split('-')[0].toUpperCase(), icon: Target, color: 'text-blue-500' },
-             { label: 'Protocol', val: mission.type || 'Standard', icon: Music, color: 'text-purple-500' }
+             { label: 'Protocol', val: mission.type || 'Standard', icon: Play, color: 'text-purple-500' }
            ].map((stat, i) => (
              <div key={i} className="bg-slate-900/40 border border-slate-800 p-3 sm:p-5 rounded-2xl sm:rounded-3xl flex flex-col items-center gap-1 sm:gap-2 hover:border-amber-500/20 transition-all group cursor-default shadow-lg">
                 <stat.icon size={16} className={`${stat.color} group-hover:scale-125 transition-transform sm:w-[18px] sm:h-[18px]`} />
@@ -490,7 +500,7 @@ const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({ mission, isCo
                   onClick={onReturnToOps || onBack}
                   className="flex-1 py-4 sm:py-8 rounded-xl sm:rounded-[4rem] bg-slate-900 border border-slate-800 text-slate-400 font-tactical font-black text-xs sm:text-xl uppercase tracking-[0.2em] shadow-xl hover:text-white hover:border-slate-700 transition-all active:scale-95 flex items-center justify-center gap-2 sm:gap-4 group"
                 >
-                  <ChevronLeft size={20} className="sm:w-6 sm:h-6" />
+                  <ArrowLeft size={20} className="sm:w-6 sm:h-6" />
                   RETURN TO OPS
                 </button>
                 <button 
@@ -498,7 +508,7 @@ const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({ mission, isCo
                   className="flex-1 py-5 sm:py-9 rounded-2xl sm:rounded-[4rem] bg-amber-500 hover:bg-amber-400 text-slate-950 font-tactical font-black text-lg sm:text-3xl uppercase tracking-[0.2em] shadow-[0_30px_80px_rgba(245,158,11,0.5)] transition-all active:scale-95 flex items-center justify-center gap-3 sm:gap-6 group"
                 >
                   NEXT
-                  <ChevronRight size={28} strokeWidth={4} className="group-hover:translate-x-3 transition-transform sm:w-10 sm:h-10" />
+                  <ArrowRight size={28} strokeWidth={4} className="group-hover:translate-x-3 transition-transform sm:w-10 sm:h-10" />
                 </button>
               </div>
            </div>

@@ -133,7 +133,11 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (isLoggedIn) {
-      playWelcomeMessage();
+      // Trigger the welcome message exactly 2 seconds after the user gets in the app
+      const timer = setTimeout(() => {
+        playWelcomeMessage();
+      }, 2000);
+      return () => clearTimeout(timer);
     }
   }, [isLoggedIn, playWelcomeMessage]);
 
