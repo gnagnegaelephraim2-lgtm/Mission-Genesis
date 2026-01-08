@@ -174,72 +174,80 @@ const App: React.FC = () => {
 
     stopAudio();
 
-    // Use seed to determine variety in tempo, scales, and percussion
-    const bpm = 80 + ((seed * 13) % 45); 
+    // UPGRADED VARIETY: Use seed to significantly shift musicality
+    const bpm = 70 + ((seed * 17) % 55); 
     const secondsPerBeat = 60 / bpm;
     const subdivision = secondsPerBeat / 4; 
     let currentStep = 0;
 
-    const rootFreqs = [32.70, 36.71, 41.20, 48.99, 55.00, 61.74];
-    const root = rootFreqs[seed % rootFreqs.length];
-    const scaleTypes = [[1, 1.25, 1.5, 1.75], [1, 1.18, 1.5, 1.68], [1, 1.33, 1.5, 2.0]];
+    const rootFreqs = [32.70, 34.65, 36.71, 38.89, 41.20, 43.65, 46.25, 48.99, 51.91, 55.00, 58.27, 61.74];
+    const root = rootFreqs[(seed * 7) % rootFreqs.length];
+    
+    // Different scales: Major, Minor, Phrygian, Dorian, Lydian, Blues
+    const scaleTypes = [
+      [1, 1.12, 1.26, 1.5, 1.68, 1.88, 2],
+      [1, 1.12, 1.18, 1.5, 1.58, 1.78, 2],
+      [1, 1.05, 1.18, 1.5, 1.58, 1.78, 2],
+      [1, 1.12, 1.18, 1.5, 1.68, 1.78, 2],
+      [1, 1.12, 1.26, 1.68, 1.5, 1.88, 2],
+      [1, 1.2, 1.33, 1.41, 1.5, 1.78, 2]
+    ];
     const baseScale = scaleTypes[seed % scaleTypes.length].map(v => root * v);
-    const drumStyle = seed % 3;
 
     const playKick = (time: number, accent = 1.0) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(140 + (seed % 30), time);
-      osc.frequency.exponentialRampToValueAtTime(40, time + 0.18);
-      gain.gain.setValueAtTime(0.45 * accent, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.25);
+      osc.frequency.setValueAtTime(150 + (seed % 50), time);
+      osc.frequency.exponentialRampToValueAtTime(35 + (seed % 10), time + 0.2);
+      gain.gain.setValueAtTime(0.5 * accent, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.3);
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start(time);
-      osc.stop(time + 0.25);
+      osc.stop(time + 0.3);
     };
 
     const playSnare = (time: number, accent = 1.0) => {
       const noise = ctx.createBufferSource();
-      const bufferSize = ctx.sampleRate * 0.15;
+      const bufferSize = ctx.sampleRate * 0.2;
       const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
       const data = buffer.getChannelData(0);
       for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * accent;
       noise.buffer = buffer;
       const filter = ctx.createBiquadFilter();
       filter.type = 'bandpass';
-      filter.frequency.setValueAtTime(1200 + (seed % 800), time);
+      filter.frequency.setValueAtTime(1000 + (seed * 10 % 1500), time);
       const gain = ctx.createGain();
-      gain.gain.setValueAtTime(0.18 * accent, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.2);
+      gain.gain.setValueAtTime(0.2 * accent, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.25);
       noise.connect(filter);
       filter.connect(gain);
       gain.connect(ctx.destination);
       noise.start(time);
-      noise.stop(time + 0.2);
+      noise.stop(time + 0.25);
     };
 
     const playHiHat = (time: number, accent = false) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'triangle';
-      osc.frequency.setValueAtTime(11000 + (seed % 4000), time);
-      gain.gain.setValueAtTime(accent ? 0.03 : 0.01, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.03);
+      osc.frequency.setValueAtTime(10000 + (seed * 100 % 6000), time);
+      gain.gain.setValueAtTime(accent ? 0.04 : 0.015, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.04);
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start(time);
-      osc.stop(time + 0.04);
+      osc.stop(time + 0.05);
     };
 
     const playSubBass = (time: number, freq: number, length: number) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = 'triangle';
+      osc.type = seed % 2 === 0 ? 'triangle' : 'sine';
       osc.frequency.setValueAtTime(freq, time);
       gain.gain.setValueAtTime(0, time);
-      gain.gain.linearRampToValueAtTime(0.18, time + 0.08);
+      gain.gain.linearRampToValueAtTime(0.2, time + 0.1);
       gain.gain.exponentialRampToValueAtTime(0.001, time + length);
       osc.connect(gain);
       gain.connect(ctx.destination);
@@ -250,15 +258,27 @@ const App: React.FC = () => {
 
     sequencerIntervalRef.current = window.setInterval(() => {
       const startTime = ctx.currentTime + 0.05;
-      const kickPattern = seed % 2 === 0 ? [1,0,0,0, 0,1,0,0, 1,0,0,0, 0,0,1,0] : [1,0,0,0, 0,0,1,0, 0,0,1,0, 1,0,0,0];
-      if (kickPattern[currentStep % 16]) playKick(startTime, currentStep % 16 === 0 ? 1.2 : 0.8);
-      if (currentStep % 16 === 8) playSnare(startTime);
-      if (currentStep % 2 === 0) playHiHat(startTime, currentStep % 4 === 0);
       
-      const bassTriggers = [0, 4, 8, 12];
+      // Seed-based rhythmic patterns
+      const kickPattern = (seed % 3 === 0) 
+        ? [1,0,0,1, 0,0,0,0, 1,0,1,0, 0,0,0,1]
+        : (seed % 3 === 1)
+          ? [1,0,0,0, 0,1,0,0, 1,0,0,0, 0,0,1,0]
+          : [1,0,1,0, 0,0,0,1, 0,1,0,0, 0,0,1,0];
+
+      const snarePattern = [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0];
+
+      if (kickPattern[currentStep % 16]) playKick(startTime, currentStep % 16 === 0 ? 1.3 : 0.8);
+      if (snarePattern[currentStep % 16]) playSnare(startTime, 1.2);
+      
+      // Varied Hi-Hat patterns
+      const hatMod = (seed % 4) + 1;
+      if (currentStep % hatMod === 0) playHiHat(startTime, currentStep % (hatMod * 2) === 0);
+      
+      const bassTriggers = (seed % 2 === 0) ? [0, 6, 12] : [0, 4, 8, 12];
       if (bassTriggers.includes(currentStep % 16)) {
-        const noteIdx = (Math.floor(currentStep / 16) + (seed % 3)) % baseScale.length;
-        playSubBass(startTime, baseScale[noteIdx], secondsPerBeat * 0.8);
+        const noteIdx = (Math.floor(currentStep / 16) + (seed % 5)) % baseScale.length;
+        playSubBass(startTime, baseScale[noteIdx], secondsPerBeat * 0.9);
       }
       currentStep++;
     }, subdivision * 1000);
@@ -277,7 +297,8 @@ const App: React.FC = () => {
   };
 
   const skipTrack = () => {
-    const nextId = trackId + 1;
+    // Cycle through 100 different procedural tracks
+    const nextId = trackId >= 100 ? 1 : trackId + 1;
     setTrackId(nextId);
     if (isAudioActive) {
       startProceduralRap(nextId);

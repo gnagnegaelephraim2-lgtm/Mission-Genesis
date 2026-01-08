@@ -52,7 +52,7 @@ export interface Opportunity {
   logo: string;
   recommended: boolean;
   url: string;
-  category: 'Scholarship' | 'University' | 'Fellowship' | 'Training';
+  category: 'University' | 'Fellowship' | 'Training';
 }
 
 export interface Player {
