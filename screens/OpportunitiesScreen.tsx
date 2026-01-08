@@ -172,8 +172,7 @@ const OpportunitiesScreen: React.FC = () => {
                 onClick={() => window.open(opp.url, '_blank')}
                 className="w-full bg-slate-950 border border-slate-800 hover:border-amber-500 text-slate-400 hover:text-amber-500 font-tactical font-black text-[11px] py-5 rounded-[1.8rem] tracking-[0.3em] transition-all flex items-center justify-center gap-3 group/btn shadow-xl active:scale-95"
               >
-                UPLINK PROTOCOL
-                <ArrowUpRight size={18} className="group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
+                UPLINK PROTOCOL ↗
               </button>
             </div>
             
@@ -181,27 +180,6 @@ const OpportunitiesScreen: React.FC = () => {
             <div className={`absolute -bottom-10 -right-10 w-40 h-40 rounded-full blur-3xl pointer-events-none group-hover:bg-amber-500/5 transition-all ${opp.category === 'University' ? 'bg-blue-500/5' : 'bg-emerald-500/5'}`}></div>
           </div>
         ))}
-      </div>
-
-      {/* FOOTER STATS */}
-      <div className="fixed bottom-28 left-0 right-0 z-40 pointer-events-none px-4">
-         <div className="max-w-4xl mx-auto bg-slate-950/80 backdrop-blur-2xl border border-slate-800 px-8 py-4 rounded-[2rem] flex items-center justify-between shadow-3xl pointer-events-auto">
-            <div className="flex items-center gap-4">
-               <ShieldCheck size={20} className="text-emerald-500" />
-               <div className="flex flex-col">
-                  <span className="text-[8px] font-tactical font-black text-slate-500 uppercase tracking-widest">Operational Readiness</span>
-                  <span className="text-[10px] font-tactical font-black text-white italic">Level 4 Node Access Granted</span>
-               </div>
-            </div>
-            <div className="h-10 w-[1px] bg-slate-800 mx-4"></div>
-            <div className="flex items-center gap-4">
-               <Zap size={20} className="text-amber-500" />
-               <div className="flex flex-col">
-                  <span className="text-[8px] font-tactical font-black text-slate-500 uppercase tracking-widest">Opportunity Yield</span>
-                  <span className="text-[10px] font-tactical font-black text-white italic">125+ Strategic Pipes Active</span>
-               </div>
-            </div>
-         </div>
       </div>
     </div>
   );

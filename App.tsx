@@ -195,6 +195,8 @@ const App: React.FC = () => {
       [1, 1.2, 1.33, 1.41, 1.5, 1.78, 2]
     ];
     const baseScale = scaleTypes[seed % scaleTypes.length].map(v => root * v);
+    // CRITICAL: Lift melody significantly higher (8x root = 3 octaves up)
+    const melodyScale = baseScale.map(v => v * 8); 
 
     const playKick = (time: number, accent = 1.0) => {
       const osc = ctx.createOscillator();
@@ -249,7 +251,7 @@ const App: React.FC = () => {
       osc.type = seed % 2 === 0 ? 'triangle' : 'sine';
       osc.frequency.setValueAtTime(freq, time);
       gain.gain.setValueAtTime(0, time);
-      gain.gain.linearRampToValueAtTime(0.2, time + 0.1);
+      gain.gain.linearRampToValueAtTime(0.18, time + 0.1);
       gain.gain.exponentialRampToValueAtTime(0.001, time + length);
       osc.connect(gain);
       gain.connect(ctx.destination);
@@ -258,8 +260,30 @@ const App: React.FC = () => {
       activeNodesRef.current.push(osc);
     };
 
+    const playMelody = (time: number, freq: number, length: number, volume = 0.12) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle'; 
+      osc.frequency.setValueAtTime(freq, time);
+      gain.gain.setValueAtTime(0, time);
+      gain.gain.linearRampToValueAtTime(volume, time + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + length);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(time);
+      osc.stop(time + length);
+      activeNodesRef.current.push(osc);
+    };
+
+    const melodyPattern = Array.from({ length: 16 }).map((_, i) => {
+      const rand = (Math.sin(seed * (i + 1)) + 1) / 2;
+      return rand > 0.6 ? Math.floor(rand * melodyScale.length) : null;
+    });
+
     sequencerIntervalRef.current = window.setInterval(() => {
       const startTime = ctx.currentTime + 0.05;
+      const step = currentStep % 16;
+      
       const kickPattern = (seed % 3 === 0) 
         ? [1,0,0,1, 0,0,0,0, 1,0,1,0, 0,0,0,1]
         : (seed % 3 === 1)
@@ -268,17 +292,24 @@ const App: React.FC = () => {
 
       const snarePattern = [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0];
 
-      if (kickPattern[currentStep % 16]) playKick(startTime, currentStep % 16 === 0 ? 1.3 : 0.8);
-      if (snarePattern[currentStep % 16]) playSnare(startTime, 1.2);
+      if (kickPattern[step]) playKick(startTime, step === 0 ? 1.3 : 0.8);
+      if (snarePattern[step]) playSnare(startTime, 1.2);
       
       const hatMod = (seed % 4) + 1;
       if (currentStep % hatMod === 0) playHiHat(startTime, currentStep % (hatMod * 2) === 0);
       
       const bassTriggers = (seed % 2 === 0) ? [0, 6, 12] : [0, 4, 8, 12];
-      if (bassTriggers.includes(currentStep % 16)) {
+      if (bassTriggers.includes(step)) {
         const noteIdx = (Math.floor(currentStep / 16) + (seed % 5)) % baseScale.length;
         playSubBass(startTime, baseScale[noteIdx], secondsPerBeat * 0.9);
       }
+
+      const melodyNoteIdx = melodyPattern[step];
+      if (melodyNoteIdx !== null) {
+        // Boost volume (0.12) and pitch (melodyScale is now 8x)
+        playMelody(startTime, melodyScale[melodyNoteIdx], subdivision * 1.8);
+      }
+
       currentStep++;
     }, subdivision * 1000);
   }, [getAudioContext, stopAudio]);
