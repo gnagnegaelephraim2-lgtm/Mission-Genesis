@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { SKILLS } from '../constants';
-import { Zap, Award, BarChart3, Star, ShieldCheck, LogOut, Edit3, Save, X, Share2, Users, Palette, CheckCircle2 } from 'lucide-react';
+import { Zap, Award, BarChart3, Star, ShieldCheck, LogOut, Edit3, Save, X, Share2, Users, Palette, CheckCircle2, Trophy } from 'lucide-react';
 
 interface ProfileScreenProps {
   completedMissions: number[];
@@ -209,55 +209,61 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
             <h3 className="text-xs font-tactical font-black text-amber-500 uppercase tracking-widest italic">Tactical Achievements</h3>
           </div>
           
-          <div className="grid grid-cols-4 gap-4">
-             {ACHIEVEMENTS.map((ach) => {
-               const isUnlocked = completedMissions.length >= ach.milestone;
-               const isClaimed = claimedAchievements.includes(ach.id);
-               const isClaimable = isUnlocked && !isClaimed;
+          <div className="relative p-6 sm:p-8 border-2 border-dashed border-blue-500/20 rounded-[2.5rem] bg-slate-950/40">
+            <div className="grid grid-cols-4 gap-4">
+               {ACHIEVEMENTS.map((ach) => {
+                 const isUnlocked = completedMissions.length >= ach.milestone;
+                 const isClaimed = claimedAchievements.includes(ach.id);
+                 const isClaimable = isUnlocked && !isClaimed;
 
-               return (
-                 <button 
-                   key={ach.id} 
-                   disabled={!isClaimable}
-                   onClick={() => onClaimAchievement(ach.id, ach.xpReward)}
-                   className={`relative aspect-square rounded-2xl p-0.5 transition-all group overflow-hidden ${
-                     isClaimed 
-                       ? 'bg-emerald-500/40 border border-emerald-500 opacity-100 scale-100' 
-                       : isUnlocked 
-                         ? 'bg-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.4)] scale-105 border border-white animate-pulse' 
-                         : 'bg-slate-900 border border-slate-800 opacity-20 scale-95 cursor-not-allowed'
-                   }`}
-                   title={isClaimable ? `Claim Reward: +${ach.xpReward} XP` : ach.label}
-                 >
-                    <div className="w-full h-full bg-slate-950 rounded-[14px] flex flex-col items-center justify-center gap-1">
-                      {isClaimed ? (
-                        <CheckCircle2 size={24} className="text-emerald-500" />
-                      ) : (
-                        <ShieldCheck size={24} className={isUnlocked ? 'text-amber-500' : 'text-slate-700'} />
-                      )}
+                 return (
+                   <div key={ach.id} className="relative">
+                      <button 
+                        disabled={!isClaimable}
+                        onClick={() => onClaimAchievement(ach.id, ach.xpReward)}
+                        className={`relative aspect-square w-full rounded-2xl p-0.5 transition-all group overflow-hidden ${
+                          isClaimed 
+                            ? 'bg-emerald-500/20 border border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]' 
+                            : isUnlocked 
+                              ? 'bg-amber-500 shadow-[0_0_30px_rgba(245,158,11,0.5)] scale-105 border border-white z-10 animate-pulse' 
+                              : 'bg-slate-900 border border-slate-800 opacity-20 scale-95 cursor-not-allowed grayscale'
+                        }`}
+                      >
+                         <div className="w-full h-full bg-slate-950 rounded-[14px] flex flex-col items-center justify-center gap-1">
+                           {isClaimed ? (
+                             <CheckCircle2 size={24} className="text-emerald-500" />
+                           ) : isUnlocked ? (
+                             <Trophy size={24} className="text-amber-500 animate-bounce" />
+                           ) : (
+                             <ShieldCheck size={24} className="text-slate-700" />
+                           )}
+                         </div>
+                         {isClaimable && (
+                           <div className="absolute inset-0 border-2 border-dashed border-cyan-400 rounded-2xl animate-[spin_10s_linear_infinite] pointer-events-none"></div>
+                         )}
+                      </button>
+                      
                       {isClaimable && (
-                        <span className="text-[6px] font-tactical font-black text-amber-500 tracking-tighter animate-bounce">CLAIM XP</span>
+                        <div className="absolute -top-2 -right-2 bg-amber-500 text-slate-950 text-[6px] font-black px-1.5 py-0.5 rounded-full shadow-lg z-20 animate-bounce">
+                           +{ach.xpReward} XP
+                        </div>
                       )}
-                      {isClaimed && (
-                        <span className="text-[6px] font-tactical font-black text-emerald-500 tracking-tighter opacity-60">SECURED</span>
-                      )}
-                    </div>
-                    {isClaimable && (
-                      <div className="absolute inset-0 border-2 border-dashed border-blue-400/50 rounded-2xl animate-[spin_10s_linear_infinite] pointer-events-none"></div>
-                    )}
-                 </button>
-               );
-             })}
+                   </div>
+                 );
+               })}
+            </div>
           </div>
 
-          <div className="mt-6 p-4 bg-slate-900/60 border border-slate-800 rounded-2xl">
-             <div className="flex items-center gap-2 mb-2">
-                <ShieldCheck size={14} className="text-amber-500" />
-                <span className="text-[10px] font-tactical font-black text-white uppercase tracking-widest">Protocol Intel</span>
+          <div className="mt-6 p-4 bg-slate-900/60 border border-slate-800 rounded-2xl flex gap-4">
+             <div className="p-3 rounded-xl bg-amber-500/10 text-amber-500 shrink-0 h-fit">
+                <ShieldCheck size={18} />
              </div>
-             <p className="text-[9px] font-medium text-slate-500 uppercase leading-relaxed tracking-tighter italic">
-                Secure more mission nodes to unlock Tactical Achievements. Once reached, click an achievement icon to manually claim your XP Reward.
-             </p>
+             <div>
+                <h4 className="text-[10px] font-tactical font-black text-white uppercase tracking-widest mb-1">Commander Protocol</h4>
+                <p className="text-[9px] font-medium text-slate-500 uppercase leading-relaxed tracking-tighter italic">
+                   Unlock tactical rewards by reaching mission milestones. <span className="text-amber-500 underline font-black">Choice rewards</span> must be claimed manually via sync handshake.
+                </p>
+             </div>
           </div>
         </div>
       </div>

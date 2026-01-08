@@ -20,7 +20,8 @@ import {
   Star,
   Terminal,
   BrainCircuit,
-  AlertCircle
+  AlertCircle,
+  RefreshCw
 } from 'lucide-react';
 
 interface MissionDetailScreenProps {
@@ -50,6 +51,7 @@ const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({ mission, isCo
   const [score, setScore] = useState(0);
   const [particles, setParticles] = useState<Particle[]>([]);
   const [decryptionFeedback, setDecryptionFeedback] = useState<{ correct: boolean, revealed: boolean } | null>(null);
+  const [attemptCount, setAttemptCount] = useState(0);
   
   const audioRef = useRef<AudioContext | null>(null);
   const particleContainerRef = useRef<HTMLDivElement>(null);
@@ -57,6 +59,7 @@ const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({ mission, isCo
   const handleStartMission = () => {
     setStatus('decryption');
     setDecryptionFeedback(null);
+    setAttemptCount(0);
     if (!audioRef.current) {
       audioRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
     }
@@ -80,16 +83,24 @@ const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({ mission, isCo
   const handleAnswer = (index: number) => {
     if (decryptionFeedback?.revealed) return;
     const isCorrect = index === mission.challenge?.correctIndex;
-    setDecryptionFeedback({ correct: isCorrect, revealed: true });
     
     if (isCorrect) {
+      setDecryptionFeedback({ correct: true, revealed: true });
       playSFX(1200, 'sine', 0.4, 0.1);
-      setScore(s => s + 500); // Decryption bonus
+      // Reward decays based on attempts: 500 -> 350 -> 200 -> 50...
+      const decryptionBonus = Math.max(50, 500 - (attemptCount * 150));
+      setScore(s => s + decryptionBonus); 
       setTimeout(() => setStatus('executing'), 2000);
     } else {
-      playSFX(200, 'sawtooth', 0.5, 0.1);
-      setTimeout(() => setStatus('executing'), 2000);
+      setDecryptionFeedback({ correct: false, revealed: true });
+      playSFX(150, 'sawtooth', 0.5, 0.1);
+      setAttemptCount(prev => prev + 1);
     }
+  };
+
+  const handleRetryDecryption = () => {
+    setDecryptionFeedback(null);
+    playSFX(600, 'sine', 0.1, 0.05);
   };
 
   const createParticleBurst = useCallback(() => {
@@ -266,9 +277,16 @@ const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({ mission, isCo
       {status === 'decryption' && mission.challenge && (
         <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-[#010409]/95 backdrop-blur-3xl p-4 sm:p-8 scanlines overflow-hidden animate-in fade-in duration-500">
            <div className="w-full max-w-3xl relative p-6 sm:p-12 border border-slate-800 rounded-[2rem] sm:rounded-[4rem] bg-slate-950 shadow-3xl overflow-hidden">
-              <div className="flex items-center gap-3 mb-8">
-                <Terminal size={20} className="text-amber-500 animate-pulse" />
-                <span className="text-[10px] sm:text-xs font-tactical font-black text-slate-500 tracking-[0.4em] uppercase">Neural Decryption Protocol</span>
+              <div className="flex justify-between items-center mb-8">
+                <div className="flex items-center gap-3">
+                  <Terminal size={20} className="text-amber-500 animate-pulse" />
+                  <span className="text-[10px] sm:text-xs font-tactical font-black text-slate-500 tracking-[0.4em] uppercase">Neural Decryption Protocol</span>
+                </div>
+                {attemptCount > 0 && (
+                   <div className="px-3 py-1 bg-rose-500/10 border border-rose-500/30 rounded-lg text-[10px] font-tactical font-black text-rose-500 uppercase tracking-widest">
+                     Attempt #{attemptCount + 1} // Rewards Reduced
+                   </div>
+                )}
               </div>
               
               <h3 className="text-xl sm:text-3xl font-tactical font-black text-white leading-tight uppercase italic tracking-tighter mb-10">
@@ -299,17 +317,26 @@ const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({ mission, isCo
               </div>
 
               {decryptionFeedback?.revealed && (
-                <div className="mt-8 p-6 rounded-2xl bg-slate-900 border border-slate-800 animate-in slide-in-from-bottom-4 duration-500 flex gap-4">
+                <div className="mt-8 p-6 rounded-2xl bg-slate-900 border border-slate-800 animate-in slide-in-from-bottom-4 duration-500 flex flex-col sm:flex-row gap-4">
                   <div className={`p-3 rounded-xl shrink-0 h-fit ${decryptionFeedback.correct ? 'bg-emerald-500 text-slate-950' : 'bg-rose-500 text-slate-950'}`}>
                     {decryptionFeedback.correct ? <Check size={24} /> : <AlertCircle size={24} />}
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <h4 className={`text-sm font-tactical font-black uppercase mb-1 ${decryptionFeedback.correct ? 'text-emerald-500' : 'text-rose-500'}`}>
                       {decryptionFeedback.correct ? 'Synapse Linked' : 'Interference Detected'}
                     </h4>
-                    <p className="text-xs text-slate-400 font-medium italic">
+                    <p className="text-xs text-slate-400 font-medium italic mb-4">
                       {mission.challenge.explanation}
                     </p>
+                    {!decryptionFeedback.correct && (
+                      <button 
+                        onClick={handleRetryDecryption}
+                        className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-xl text-[10px] font-tactical font-black tracking-widest uppercase transition-all"
+                      >
+                        <RefreshCw size={12} className="animate-spin-slow" />
+                        RETRY SYNC
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
@@ -425,6 +452,13 @@ const MissionDetailScreen: React.FC<MissionDetailScreenProps> = ({ mission, isCo
         @keyframes victory-float {
           0%, 100% { transform: rotate(12deg) translateY(0); }
           50% { transform: rotate(8deg) translateY(-20px); }
+        }
+        .animate-spin-slow {
+          animation: spin 3s linear infinite;
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
         }
       `}</style>
     </div>

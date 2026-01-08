@@ -13,6 +13,7 @@ interface LeaderboardScreenProps {
 }
 
 const SURGE_INTERVAL = 15 * 60 * 1000; // 15 minutes
+const RECRUIT_INTERVAL = 20 * 1000; // 20 seconds for new recruits
 
 const generateSimulatedUsers = (count: number): Player[] => {
   const avatars = ['🦅', '🦁', '🐆', '🐘', '🦍', '🦓', '🦒', '🦏', '🐍', '🦎', '🐃', '🐾'];
@@ -37,9 +38,9 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({
   onRefresh,
   onShareInvite
 }) => {
-  const [sessionStartTime] = useState(Date.now());
   const [currentTime, setCurrentTime] = useState(Date.now());
-  const [simulatedPlayers, setSimulatedPlayers] = useState<Player[]>(() => generateSimulatedUsers(100));
+  const [simulatedPlayers, setSimulatedPlayers] = useState<Player[]>(() => generateSimulatedUsers(50));
+  const [sessionRecruits, setSessionRecruits] = useState<Player[]>([]);
   const [nextSurgeTime, setNextSurgeTime] = useState(Date.now() + SURGE_INTERVAL);
 
   // Automated XP Growth Effect
@@ -53,10 +54,29 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({
       setNextSurgeTime(Date.now() + SURGE_INTERVAL);
     }, SURGE_INTERVAL);
 
+    // 20-Second New User Recruitment
+    const recruitmentInterval = setInterval(() => {
+      const avatars = ['🐣', '🔥', '🛡️', '⚡', '🤖', '👾'];
+      const prefixes = ['Newbie', 'Recruit', 'Agent', 'Static', 'Ghost'];
+      const suffixes = ['99', '00', 'Alpha', 'Beta', 'X'];
+      
+      const newRecruit: Player = {
+        rank: 0,
+        username: `${prefixes[Math.floor(Math.random() * prefixes.length)]}_${suffixes[Math.floor(Math.random() * suffixes.length)]}_${Math.floor(Math.random() * 999)}`,
+        xp: Math.floor(Math.random() * 500),
+        avatar: avatars[Math.floor(Math.random() * avatars.length)],
+        id: `rec-${Date.now()}`,
+        lastActive: Date.now()
+      };
+
+      setSessionRecruits(prev => [newRecruit, ...prev].slice(0, 20));
+    }, RECRUIT_INTERVAL);
+
     const clockInterval = setInterval(() => setCurrentTime(Date.now()), 1000);
 
     return () => {
       clearInterval(surgeInterval);
+      clearInterval(recruitmentInterval);
       clearInterval(clockInterval);
     };
   }, []);
@@ -69,17 +89,7 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({
   };
 
   const dynamicPlayers = useMemo(() => {
-    const minutesElapsedSinceStart = Math.floor((currentTime - sessionStartTime) / (2 * 60 * 1000));
-    const newRecruits: Player[] = Array.from({ length: minutesElapsedSinceStart }).map((_, i) => ({
-      rank: 0,
-      username: `Recruit_${i + 1}`,
-      xp: 0 + (Math.floor((currentTime - sessionStartTime) / SURGE_INTERVAL) * 500), // Recruits also gain if they've been around
-      avatar: '🐣',
-      id: `recruit-${i}`,
-      lastActive: Date.now()
-    }));
-
-    let pool = [...meshCommanders, ...simulatedPlayers, ...newRecruits];
+    let pool = [...meshCommanders, ...simulatedPlayers, ...sessionRecruits];
     const uniquePoolMap = new Map<string, Player>();
     
     pool.forEach(p => { 
@@ -102,7 +112,7 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({
     return Array.from(uniquePoolMap.values())
       .sort((a, b) => b.xp - a.xp)
       .map((p, i) => ({ ...p, rank: i + 1 }));
-  }, [userXp, userProfile, meshCommanders, simulatedPlayers, currentTime, sessionStartTime]);
+  }, [userXp, userProfile, meshCommanders, simulatedPlayers, sessionRecruits]);
 
   const currentUser = dynamicPlayers.find(p => p.isUser);
   const userRank = currentUser?.rank || '-';
@@ -149,9 +159,9 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({
             <span className="text-[9px] font-tactical font-black text-amber-500 uppercase tracking-widest">Recruit Log</span>
          </div>
          <div className="flex gap-10 animate-[ticker-scroll_30s_linear_infinite] whitespace-nowrap">
-            {dynamicPlayers.slice(-10).reverse().map((p, i) => (
+            {sessionRecruits.map((p, i) => (
               <span key={i} className="text-[10px] font-mono text-slate-400">
-                &gt; <span className="text-white font-black">{p.username}</span> ESTABLISHED UPLINK: <span className="text-emerald-500">LVL 0 [0 XP]</span>
+                &gt; <span className="text-white font-black">{p.username}</span> ESTABLISHED UPLINK: <span className="text-emerald-500">LVL 0 [{p.xp} XP]</span>
               </span>
             ))}
          </div>
@@ -209,7 +219,7 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({
       <div className="mt-10 p-6 border border-slate-800 rounded-[2rem] flex flex-col items-center gap-4 text-center bg-slate-900/40 shadow-sm">
          <Info size={24} className="text-slate-500" />
          <p className="text-[10px] font-tactical font-bold text-slate-500 uppercase tracking-widest leading-relaxed max-w-sm">
-           The <span className="text-amber-600 underline">Dynamic Grid</span> updates real-time. Simulated commanders gain XP every 15 minutes. Secure your lead through tactical missions.
+           The <span className="text-amber-600 underline">Dynamic Grid</span> updates real-time. New recruits join every 20 seconds. Secure your lead through tactical missions.
          </p>
       </div>
     </div>
